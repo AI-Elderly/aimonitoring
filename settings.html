@@ -83,86 +83,108 @@
   </div>
 
   <script>
-  const API_BASE = "https://semimaterialistic-hyperbolic-laverne.ngrok-free.dev";
+const API_BASE = "https://semimaterialistic-hyperbolic-laverne.ngrok-free.dev";
 
-  // Unlock a field for editing
-  function enableField(id) {
-    const field = document.getElementById(id);
-    if (id === "password") field.value = ""; // allow entering new password
-    field.disabled = false;
-    field.focus();
-  }
+// Unlock a field for editing
+function enableField(id) {
+  const field = document.getElementById(id);
+  if (id === "password") field.value = ""; // allow entering new password
+  field.disabled = false;
+  field.focus();
+}
 
-  // Load user data on page load
-  document.addEventListener("DOMContentLoaded", () => {
-    // Optional: you can still get the token if your backend uses it
-    const token = localStorage.getItem("token");
+// Load user data on page load
+document.addEventListener("DOMContentLoaded", async () => {
+  const token = localStorage.getItem("token");
 
-    fetch(`${API_BASE}/user/settings`, {
+  try {
+    const res = await fetch(`${API_BASE}/user/settings`, {
       method: "GET",
       headers: token ? {
         "Authorization": `Bearer ${token}`,
         "ngrok-skip-browser-warning": "true"
       } : {}
-    })
-    .then(async res => {
-      if (!res.ok) {
-        console.warn("Failed to load user settings.");
-        return;
-      }
-      return res.json();
-    })
-    .then(user => {
-      if (!user) return;
+    });
 
-      document.getElementById("fullname").value = user.fullname || "";
-      document.getElementById("age").value = user.age || "";
-      document.getElementById("email").value = user.email || "";
-      document.getElementById("password").value = "******";
-    })
-    .catch(err => console.error("Error loading settings:", err));
-  });
+    const text = await res.text(); // read response as text first
 
-  // Save updated settings
-  document.getElementById("settings-form").addEventListener("submit", (e) => {
-    e.preventDefault();
+    if (!res.ok) {
+      console.error(`Server returned status ${res.status}:`, text);
+      alert("Failed to load settings. Check console for details.");
+      return;
+    }
 
-    const token = localStorage.getItem("token");
-    const payload = {
-      fullname: document.getElementById("fullname").value,
-      age: document.getElementById("age").value,
-      email: document.getElementById("email").value
-    };
+    let user;
+    try {
+      user = JSON.parse(text); // try to parse JSON
+    } catch (err) {
+      console.error("Failed to parse JSON. Server returned:", text);
+      alert("Invalid response from server.");
+      return;
+    }
 
-    const pw = document.getElementById("password").value;
-    if (pw !== "" && pw !== "******") payload.password = pw;
+    // Fill input fields with DB values
+    document.getElementById("fullname").value = user.fullname || "";
+    document.getElementById("age").value = user.age || "";
+    document.getElementById("email").value = user.email || "";
+    document.getElementById("password").value = "******";
 
-    fetch(`${API_BASE}/user/settings`, {
+  } catch (err) {
+    console.error("Fetch error:", err);
+    alert("Error connecting to server.");
+  }
+});
+
+// Save updated settings
+document.getElementById("settings-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const token = localStorage.getItem("token");
+  const payload = {
+    fullname: document.getElementById("fullname").value,
+    age: document.getElementById("age").value,
+    email: document.getElementById("email").value
+  };
+
+  const pw = document.getElementById("password").value;
+  if (pw !== "" && pw !== "******") payload.password = pw;
+
+  try {
+    const res = await fetch(`${API_BASE}/user/settings`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        ...(token && {"Authorization": `Bearer ${token}`}),
+        ...(token && { "Authorization": `Bearer ${token}` }),
         "ngrok-skip-browser-warning": "true"
       },
       body: JSON.stringify(payload)
-    })
-    .then(async res => {
-      if (!res.ok) {
-        alert("Could not update settings.");
-        return;
-      }
-      return res.json();
-    })
-    .then(() => {
-      alert("✅ Settings updated successfully!");
-      location.reload();
-    })
-    .catch(err => {
-      console.error("Update error:", err);
-      alert("Error updating settings.");
     });
-  });
-  </script>
+
+    const text = await res.text();
+
+    if (!res.ok) {
+      console.error(`Server returned status ${res.status}:`, text);
+      alert("Could not update settings. Check console for details.");
+      return;
+    }
+
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = null; // ignore if no JSON returned
+    }
+
+    alert("✅ Settings updated successfully!");
+    location.reload();
+
+  } catch (err) {
+    console.error("Fetch error:", err);
+    alert("Error updating settings.");
+  }
+});
+</script>
+
 
   <script src="device.js"></script>
   <script src="logout.js"></script>
