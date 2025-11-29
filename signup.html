@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign Up | AI Health Monitor</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
+  <script>
+    // Apply dark mode immediately before page renders
+    (function() {
+      const theme = localStorage.getItem('theme') || 'light';
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark-mode');
+      }
+    })();
+  </script>
+</head>
+
+<body>
+  <button class="back-btn" onclick="window.location.href='index.html'">← Back</button>
+
+  <div class="container signin-container">
+    <div class="hero">
+      <img src="elder.png" alt="Elder Icon" class="hero-img" />
+
+      <h1 class="signin-title">Create Account</h1>
+      <p class="signin-subtitle">Join AI Health Monitor today!</p>
+
+      <form class="signin-form" id="signupForm">
+        <div class="input-group">
+          <input type="text" id="fullname" placeholder="Full Name" required />
+        </div>
+        <div class="input-group">
+          <input type="number" id="age" placeholder="Age" min="1" max="120" required />
+        </div>
+        <div class="input-group">
+          <input type="email" id="email" placeholder="Email" required />
+        </div>
+        <div class="input-group">
+          <input type="password" id="password" placeholder="Password" required />
+        </div>
+        <div class="input-group">
+          <input type="password" id="confirm-password" placeholder="Confirm Password" required />
+        </div>
+
+        <button class="get-started-btn" type="submit">Sign Up</button>
+
+        <p class="signup-link">
+          Already have an account?
+          <a href="signin.html">Sign In</a>
+        </p>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Apply saved theme on page load
+    if (localStorage.getItem('theme') === 'dark') {
+      document.body.classList.add('dark-mode');
+    }
+
+    // ✅ Flask backend URL - CHANGE THIS TO YOUR COMPUTER'S IP
+    const FLASK_URL = 'https://semimaterialistic-hyperbolic-laverne.ngrok-free.dev';
+
+    document.getElementById("signupForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const fullname = document.getElementById("fullname").value.trim();
+      const age = parseInt(document.getElementById("age").value.trim());
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value.trim();
+      const confirmPassword = document.getElementById("confirm-password").value.trim();
+
+      if (!fullname || !age || !email || !password || !confirmPassword) {
+        alert("⚠️ Please fill in all fields.");
+        return;
+      }
+
+      if (age < 40) {
+        alert("❌ Sorry, this service is designed for users aged 40 and above.");
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        alert("❌ Passwords do not match!");
+        return;
+      }
+
+      try {
+        console.log("🔐 Attempting signup to Flask...");
+        
+        const response = await fetch(`${FLASK_URL}/register`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            fullname: fullname,
+            age: age,
+            email: email,
+            password: password
+          })
+        });
+
+        const data = await response.json();
+        console.log("Signup response:", data);
+
+        if (response.ok) {
+          alert("✅ Account created successfully! Please sign in.");
+          window.location.href = "signin.html";
+        } else {
+          alert("❌ Signup failed: " + (data.error || data.message || "Unknown error"));
+        }
+      } catch (error) {
+        console.error("Error:", error);
+        alert(`❌ Error connecting to server at ${FLASK_URL}. Make sure Flask is running.`);
+      }
+    });
+  </script>
+</body>
+</html>
