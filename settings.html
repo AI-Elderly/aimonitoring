@@ -91,13 +91,6 @@
 const API_BASE = "https://semimaterialistic-hyperbolic-laverne.ngrok-free.dev";
 
 // Load saved token
-const token = localStorage.getItem("token");
-
-// Redirect if no token
-if (!token) {
-  alert("You must be logged in to access settings.");
-  window.location.href = "index.html";
-}
 
 // Unlock a field for editing
 function enableField(id) {
