@@ -100,25 +100,25 @@ const token = localStorage.getItem("access_token");
 const tableBody = document.getElementById("health-log-body");
 const refreshBtn = document.getElementById("refresh-btn");
 
-// Format timestamp to Taipei timezone
-function formatDateTimeTS(ts) {
+// -------------------------------
+// Philippine Time Formatter
+// -------------------------------
+function formatPHDateTime(ts) {
   if (!ts) return { date: "—", time: "—" };
-
-  // Parse timestamp as UTC
-  const d = new Date(ts + "Z");
-
-  const optionsDate = { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit' };
-  const optionsTime = { timeZone: 'Asia/Taipei', hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' };
-
+  const d = new Date(ts);
+  const optionsDate = { year: "numeric", month: "2-digit", day: "2-digit", timeZone: "Asia/Manila" };
+  const optionsTime = { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false, timeZone: "Asia/Manila" };
   return {
-    date: d.toLocaleDateString('en-CA', optionsDate),
-    time: d.toLocaleTimeString('en-GB', optionsTime)
+    date: d.toLocaleDateString("en-CA", optionsDate),
+    time: d.toLocaleTimeString("en-GB", optionsTime)
   };
 }
 
-// Render table row
+// -------------------------------
+// Render Table Row
+// -------------------------------
 function renderRow(r) {
-  const t = formatDateTimeTS(r.timestamp);
+  const t = formatPHDateTime(r.timestamp);
   return `
     <tr>
       <td>${t.date}</td>
@@ -128,18 +128,25 @@ function renderRow(r) {
     </tr>`;
 }
 
-// Update latest vitals display
+// -------------------------------
+// Update Latest Reading
+// -------------------------------
 function updateLatestVitals(records) {
   if (!records.length) return;
   const r = records[0];
   document.getElementById("live-heart-rate").textContent = r.heart_rate ?? "—";
   document.getElementById("live-spo2").textContent = r.spo2 ?? "—";
-  document.getElementById("live-timestamp").textContent = formatDateTimeTS(r.timestamp).time;
+  document.getElementById("live-timestamp").textContent = formatPHDateTime(r.timestamp).time;
 }
 
-// Fetch wrapper
+// -------------------------------
+// Fetch Wrapper
+// -------------------------------
 async function fetchJSON(url, options = {}) {
-  options.headers = { ...(options.headers || {}), "ngrok-skip-browser-warning": "true" };
+  options.headers = {
+    ...(options.headers || {}),
+    "ngrok-skip-browser-warning": "true"
+  };
   try {
     const res = await fetch(url, options);
     const text = await res.text();
@@ -150,10 +157,12 @@ async function fetchJSON(url, options = {}) {
   }
 }
 
-// Load health logs
+// -------------------------------
+// Load Health Logs
+// -------------------------------
 async function loadHealthLogs() {
   if (!token) {
-    tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">⚠️ You must log in first.</td></tr>`;
+    tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:red;">⚠️ You must log in first.</td></tr>`;
     return;
   }
 
@@ -163,12 +172,12 @@ async function loadHealthLogs() {
   });
 
   if (!ok) {
-    tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">❌ Error loading logs<br><small>${error}</small></td></tr>`;
+    tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:red;">❌ Error loading logs<br><small>${error}</small></td></tr>`;
     return;
   }
 
   if (!Array.isArray(data) || data.length === 0) {
-    tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;">📭 No records found.</td></tr>`;
+    tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center;">📭 No records found.</td></tr>`;
     return;
   }
 
@@ -176,10 +185,14 @@ async function loadHealthLogs() {
   updateLatestVitals(data);
 }
 
+// -------------------------------
+// Event Listeners
+// -------------------------------
 refreshBtn.addEventListener("click", loadHealthLogs);
 loadHealthLogs();
 setInterval(loadHealthLogs, 5000);
 </script>
+
 <script src="logout.js"></script>
 </body>
 </html>
