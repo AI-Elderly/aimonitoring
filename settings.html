@@ -201,7 +201,7 @@ async function saveUserSettings(e) {
       if (res.status === 401) {
         alert("⚠️ Session expired. Please log in again.");
         localStorage.removeItem("token");
-        window.location.href = "login.html";
+        window.location.href = "index.html";
       } else {
         console.error(`Server returned status ${res.status}:`, text);
         alert("Could not update settings. Check console for details.");
