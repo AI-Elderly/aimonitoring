@@ -103,11 +103,13 @@ function enableField(id) {
 document.addEventListener("DOMContentLoaded", () => {
 
   fetch(`${API_BASE}/user/settings`, {
-    method: "GET",
-    headers: {
-      "Authorization": `Bearer ${token}`
-    }
-  })
+  method: "GET",
+  headers: {
+    "Authorization": `Bearer ${token}`,
+    "ngrok-skip-browser-warning": "true"
+  }
+})
+
   .then(res => res.json())
   .then(user => {
     document.getElementById("fullname").value = user.fullname;
