@@ -80,7 +80,7 @@
             <thead>
               <tr>
                 <th>Date</th>
-                <th>Time (PHT)</th>
+                <th>Time</th>
                 <th>❤️ Heart Rate</th>
                 <th>🌬️ SpO₂</th>
               </tr>
@@ -100,13 +100,15 @@ const token = localStorage.getItem("access_token");
 const tableBody = document.getElementById("health-log-body");
 const refreshBtn = document.getElementById("refresh-btn");
 
-// Convert timestamp to Philippine Time (PHT)
-function formatDateTimePHT(ts) {
-  if (!ts || isNaN(Date.parse(ts))) return { date: "—", time: "—" };
-  const d = new Date(ts);
-  
-  const optionsDate = { timeZone: 'Asia/Manila', year: 'numeric', month: '2-digit', day: '2-digit' };
-  const optionsTime = { timeZone: 'Asia/Manila', hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' };
+// Format timestamp to Taipei timezone
+function formatDateTimeTS(ts) {
+  if (!ts) return { date: "—", time: "—" };
+
+  // Parse timestamp as UTC
+  const d = new Date(ts + "Z");
+
+  const optionsDate = { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit' };
+  const optionsTime = { timeZone: 'Asia/Taipei', hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' };
 
   return {
     date: d.toLocaleDateString('en-CA', optionsDate),
@@ -114,8 +116,9 @@ function formatDateTimePHT(ts) {
   };
 }
 
+// Render table row
 function renderRow(r) {
-  const t = formatDateTimePHT(r.timestamp);
+  const t = formatDateTimeTS(r.timestamp);
   return `
     <tr>
       <td>${t.date}</td>
@@ -125,19 +128,18 @@ function renderRow(r) {
     </tr>`;
 }
 
+// Update latest vitals display
 function updateLatestVitals(records) {
   if (!records.length) return;
   const r = records[0];
   document.getElementById("live-heart-rate").textContent = r.heart_rate ?? "—";
   document.getElementById("live-spo2").textContent = r.spo2 ?? "—";
-  document.getElementById("live-timestamp").textContent = formatDateTimePHT(r.timestamp).time;
+  document.getElementById("live-timestamp").textContent = formatDateTimeTS(r.timestamp).time;
 }
 
+// Fetch wrapper
 async function fetchJSON(url, options = {}) {
-  options.headers = {
-    ...(options.headers || {}),
-    "ngrok-skip-browser-warning": "true"
-  };
+  options.headers = { ...(options.headers || {}), "ngrok-skip-browser-warning": "true" };
   try {
     const res = await fetch(url, options);
     const text = await res.text();
@@ -148,9 +150,10 @@ async function fetchJSON(url, options = {}) {
   }
 }
 
+// Load health logs
 async function loadHealthLogs() {
   if (!token) {
-    tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:red;">⚠️ You must log in first.</td></tr>`;
+    tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">⚠️ You must log in first.</td></tr>`;
     return;
   }
 
@@ -160,12 +163,12 @@ async function loadHealthLogs() {
   });
 
   if (!ok) {
-    tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:red;">❌ Error loading logs<br><small>${error}</small></td></tr>`;
+    tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">❌ Error loading logs<br><small>${error}</small></td></tr>`;
     return;
   }
 
   if (!Array.isArray(data) || data.length === 0) {
-    tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center;">📭 No records found.</td></tr>`;
+    tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;">📭 No records found.</td></tr>`;
     return;
   }
 
@@ -177,7 +180,6 @@ refreshBtn.addEventListener("click", loadHealthLogs);
 loadHealthLogs();
 setInterval(loadHealthLogs, 5000);
 </script>
-
 <script src="logout.js"></script>
 </body>
 </html>
