@@ -7,6 +7,214 @@
 
   <link rel="stylesheet" href="styles.css" />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ===== General Styles ===== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Poppins', sans-serif;
+}
+
+body {
+  background-color: #f4f6f9;
+  color: #333;
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ===== Back Button ===== */
+.back-btn {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  background-color: #ffffff;
+  border: 1px solid #ddd;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s ease;
+}
+
+.back-btn:hover {
+  background-color: #f0f0f0;
+}
+
+/* ===== Dashboard Container ===== */
+.dashboard-container {
+  display: flex;
+  width: 100%;
+}
+
+/* ===== Sidebar ===== */
+.sidebar {
+  width: 250px;
+  background-color: #1e293b;
+  color: #ffffff;
+  padding: 30px 20px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.sidebar .logo {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 40px;
+}
+
+.sidebar .logo span {
+  color: #4f46e5;
+}
+
+.nav-links {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.nav-links a {
+  text-decoration: none;
+  color: #e0e0e0;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.nav-links a:hover {
+  background-color: #374151;
+  color: #ffffff;
+}
+
+.nav-links img.nav-icon {
+  width: 24px;
+  height: 24px;
+}
+
+/* ===== Main Content ===== */
+.main-content {
+  flex: 1;
+  padding: 40px 50px;
+}
+
+.dashboard-header h1 {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.dashboard-header p {
+  font-size: 16px;
+  color: #555;
+}
+
+/* ===== Settings Form ===== */
+.settings-section {
+  margin-top: 30px;
+  background-color: #ffffff;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.input-group {
+  margin-bottom: 20px;
+}
+
+.input-group label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #333;
+}
+
+.flex-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.flex-row input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border 0.2s ease;
+}
+
+.flex-row input:focus {
+  border-color: #4f46e5;
+  outline: none;
+}
+
+.edit-btn {
+  background-color: #4f46e5;
+  color: #ffffff;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s ease;
+}
+
+.edit-btn:hover {
+  background-color: #4338ca;
+}
+
+.get-started-btn {
+  background-color: #10b981;
+  color: #ffffff;
+  border: none;
+  padding: 12px 20px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 10px;
+  width: 100%;
+  transition: all 0.2s ease;
+}
+
+.get-started-btn:hover {
+  background-color: #059669;
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 900px) {
+  .dashboard-container {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    flex-direction: row;
+    overflow-x: auto;
+    padding: 15px;
+  }
+
+  .nav-links {
+    flex-direction: row;
+    gap: 12px;
+  }
+
+  .main-content {
+    padding: 20px;
+  }
+
+  .settings-section {
+    padding: 20px;
+  }
+}
+
+  </style>
 </head>
 <body>
 
