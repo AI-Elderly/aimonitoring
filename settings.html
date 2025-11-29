@@ -82,10 +82,8 @@
     </main>
   </div>
 
-  <script>
+<script>
 const API_BASE = "https://semimaterialistic-hyperbolic-laverne.ngrok-free.dev";
-
-// ----------------- Utility Functions -----------------
 
 // Unlock a field for editing
 function enableField(id) {
@@ -95,17 +93,13 @@ function enableField(id) {
   field.focus();
 }
 
-// Check if response is HTML (e.g., ngrok error page)
-function isHTML(text) {
-  return text.trim().startsWith("<!DOCTYPE html>") || text.trim().startsWith("<html");
-}
+// Load user data on page load
+document.addEventListener("DOMContentLoaded", async () => {
+  const token = localStorage.getItem("access_token"); // ✅ use correct token key
 
-// ----------------- Load User Settings -----------------
-async function loadUserSettings() {
-  const token = localStorage.getItem("token");
   if (!token) {
-    alert("⚠️ You are not logged in. Redirecting to login page...");
-    window.location.href = "login.html";
+    alert("⚠️ You are not logged in. Please sign in first.");
+    window.location.href = "signin.html";
     return;
   }
 
@@ -118,54 +112,56 @@ async function loadUserSettings() {
       }
     });
 
-    const text = await res.text();
+    const text = await res.text(); // read as text first
 
-    if (isHTML(text)) {
-      console.error("Received HTML instead of JSON:", text);
-      alert("⚠️ Server returned invalid response. Are you logged in?");
+    // Detect HTML responses (ngrok error page)
+    if (text.trim().startsWith("<!DOCTYPE html>")) {
+      console.error("⚠️ Received HTML instead of JSON:", text);
+      alert("Server returned HTML instead of JSON. Your session may have expired. Please log in again.");
+      localStorage.removeItem("access_token");
+      window.location.href = "signin.html";
       return;
     }
 
-    if (!res.ok) {
-      if (res.status === 401) {
-        alert("⚠️ Session expired. Please log in again.");
-        localStorage.removeItem("token");
-        window.location.href = "login.html";
-      } else {
-        console.error(`Server returned status ${res.status}:`, text);
-        alert("Failed to load settings. Check console for details.");
-      }
-      return;
-    }
-
+    // Try parsing JSON
     let user;
     try {
       user = JSON.parse(text);
     } catch (err) {
-      console.error("Failed to parse JSON. Server returned:", text);
-      alert("Invalid response from server.");
+      console.error("⚠️ Failed to parse JSON:", text);
+      alert("Invalid response from server. Try logging in again.");
       return;
     }
 
+    if (res.status === 401) {
+      // Token invalid or expired
+      console.warn("⚠️ Unauthorized:", user);
+      alert("Your session has expired or token is invalid. Please sign in again.");
+      localStorage.removeItem("access_token");
+      window.location.href = "signin.html";
+      return;
+    }
+
+    // Fill input fields
     document.getElementById("fullname").value = user.fullname || "";
     document.getElementById("age").value = user.age || "";
     document.getElementById("email").value = user.email || "";
     document.getElementById("password").value = "******";
 
   } catch (err) {
-    console.error("Fetch error:", err);
-    alert("Error connecting to server. Check console for details.");
+    console.error("❌ Fetch error:", err);
+    alert("Error connecting to server. Make sure Flask is running and accessible.");
   }
-}
+});
 
-// ----------------- Save Updated Settings -----------------
-async function saveUserSettings(e) {
+// Save updated settings
+document.getElementById("settings-form").addEventListener("submit", async (e) => {
   e.preventDefault();
+  const token = localStorage.getItem("access_token");
 
-  const token = localStorage.getItem("token");
   if (!token) {
-    alert("⚠️ You are not logged in. Redirecting to login page...");
-    window.location.href = "login.html";
+    alert("⚠️ You are not logged in. Please sign in first.");
+    window.location.href = "signin.html";
     return;
   }
 
@@ -191,21 +187,12 @@ async function saveUserSettings(e) {
 
     const text = await res.text();
 
-    if (isHTML(text)) {
-      console.error("Received HTML instead of JSON:", text);
-      alert("⚠️ Server returned invalid response. Settings not saved.");
-      return;
-    }
-
-    if (!res.ok) {
-      if (res.status === 401) {
-        alert("⚠️ Session expired. Please log in again.");
-        localStorage.removeItem("token");
-        window.location.href = "index.html";
-      } else {
-        console.error(`Server returned status ${res.status}:`, text);
-        alert("Could not update settings. Check console for details.");
-      }
+    // Detect HTML responses
+    if (text.trim().startsWith("<!DOCTYPE html>")) {
+      console.error("⚠️ Received HTML instead of JSON:", text);
+      alert("Server returned HTML instead of JSON. Your session may have expired. Please log in again.");
+      localStorage.removeItem("access_token");
+      window.location.href = "signin.html";
       return;
     }
 
@@ -213,22 +200,25 @@ async function saveUserSettings(e) {
     try {
       data = JSON.parse(text);
     } catch {
-      data = null; // ignore if no JSON returned
+      data = null; // ignore if no JSON
+    }
+
+    if (!res.ok) {
+      console.error(`⚠️ Server returned status ${res.status}:`, data || text);
+      alert("Could not update settings. Check console for details.");
+      return;
     }
 
     alert("✅ Settings updated successfully!");
     location.reload();
 
   } catch (err) {
-    console.error("Fetch error:", err);
-    alert("Error updating settings.");
+    console.error("❌ Fetch error:", err);
+    alert("Error updating settings. Make sure Flask is running and accessible.");
   }
-}
-
-// ----------------- Event Listeners -----------------
-document.addEventListener("DOMContentLoaded", loadUserSettings);
-document.getElementById("settings-form").addEventListener("submit", saveUserSettings);
+});
 </script>
+
 
 
 
