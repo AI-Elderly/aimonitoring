@@ -10,94 +10,157 @@
 </head>
 
 <body>
-  <!-- 🔙 Back Button -->
+
+  <!-- Back Button -->
   <button class="back-btn" onclick="window.location.href='dashboard.html'">← Back</button>
 
   <div class="dashboard-container">
-    <!--  Sidebar -->
+    
+    <!-- Sidebar -->
     <aside class="sidebar">
-  <h2 class="logo">AI<span>Health</span></h2>
-  <nav class="nav-links">
-    <a href="./dashboard.html">
-  <img src="dashboard.png" class="nav-icon"> Dashboard
-</a>
-<a href="./healthlogs.html">📋 Health Logs</a>
-<a href="./settings.html">⚙️ Settings</a>
-<a href="device.html">🔌 Device</a>
-<a href="./ai-assistant.html">
-  <img src="chatbot.jpg" alt="Chatbot Icon" style="width:24px; height:24px; border-radius:50%; vertical-align:middle;">
-  AlertoBot
-</a>
-<a href="./about.html">ℹ️ About</a>
-<a href="#" id="logout-btn">🚪 Logout</a>
-  </nav>
-</aside>
+      <h2 class="logo">AI<span>Health</span></h2>
+      <nav class="nav-links">
+        <a href="./dashboard.html"><img src="dashboard.png" class="nav-icon"> Dashboard</a>
+        <a href="./healthlogs.html">📋 Health Logs</a>
+        <a href="./settings.html">⚙️ Settings</a>
+        <a href="device.html">🔌 Device</a>
+        <a href="./ai-assistant.html">
+          <img src="chatbot.jpg" alt="Chatbot Icon" style="width:24px; height:24px; border-radius:50%; vertical-align:middle;">
+          AlertoBot
+        </a>
+        <a href="./about.html">ℹ️ About</a>
+        <a href="#" id="logout-btn">🚪 Logout</a>
+      </nav>
+    </aside>
 
-    <!--  Main Content -->
+    <!-- Main Content -->
     <main class="main-content">
       <header class="dashboard-header">
-        <h1 id="welcome-text">User Settings</h1>
+        <h1>User Settings</h1>
         <p>Manage your account and preferences</p>
       </header>
 
-      <!--  Settings Form -->
+      <!-- Settings Form -->
       <section class="settings-section">
         <form id="settings-form">
+
+          <!-- Full Name -->
           <div class="input-group">
-            <label for="username">Full Name</label>
-            <input type="text" id="username" placeholder="Enter your name" required />
+            <label>Full Name</label>
+            <div class="flex-row">
+              <input type="text" id="fullname" disabled />
+              <button type="button" class="edit-btn" onclick="enableField('fullname')">Edit</button>
+            </div>
           </div>
 
+          <!-- Age -->
           <div class="input-group">
-            <label for="age">Age</label>
-            <input type="number" id="age" placeholder="Enter your age" min="1" max="120" required />
+            <label>Age</label>
+            <div class="flex-row">
+              <input type="number" id="age" disabled min="1" max="120" />
+              <button type="button" class="edit-btn" onclick="enableField('age')">Edit</button>
+            </div>
           </div>
 
+          <!-- Email -->
           <div class="input-group">
-            <label for="email">Email</label>
-            <input type="email" id="email" placeholder="Enter your email" required />
+            <label>Email</label>
+            <div class="flex-row">
+              <input type="email" id="email" disabled />
+              <button type="button" class="edit-btn" onclick="enableField('email')">Edit</button>
+            </div>
           </div>
 
+          <!-- Password -->
+          <div class="input-group">
+            <label>Password</label>
+            <div class="flex-row">
+              <input type="password" id="password" value="******" disabled />
+              <button type="button" class="edit-btn" onclick="enableField('password')">Edit</button>
+            </div>
+          </div>
 
           <button type="submit" class="get-started-btn">💾 Save Changes</button>
+
         </form>
       </section>
     </main>
   </div>
 
-  <script>
-  // Load user data
-  const username = localStorage.getItem("username");
-  const age = localStorage.getItem("age");
-  const email = localStorage.getItem("email");
+<script>
+const API_BASE = "https://semimaterialistic-hyperbolic-laverne.ngrok-free.dev";
+const token = localStorage.getItem("token");
 
-  // Fill the form if data exists
-  if (username) document.getElementById("username").value = username;
-  if (age) document.getElementById("age").value = age;
-  if (email) document.getElementById("email").value = email;
+// Unlock a field for editing
+function enableField(id) {
+  const field = document.getElementById(id);
+  if (id === "password") field.value = ""; // Remove masked password
+  field.disabled = false;
+  field.focus();
+}
 
-  const welcomeText = document.getElementById("welcome-text");
-  welcomeText.textContent = username
-    ? `${username}'s Settings`
-    : "User Settings";
+// Load user data when page opens
+document.addEventListener("DOMContentLoaded", () => {
 
-  // Save new settings
-  document.getElementById("settings-form").addEventListener("submit", (e) => {
-    e.preventDefault();
-
-    const newName = document.getElementById("username").value.trim();
-    const newAge = document.getElementById("age").value.trim();
-    const newEmail = document.getElementById("email").value.trim();
-
-    localStorage.setItem("username", newName);
-    localStorage.setItem("age", newAge);
-    localStorage.setItem("email", newEmail);
-
-    alert("✅ Settings updated successfully!");
-    window.location.href = "dashboard.html";
+  fetch(`${API_BASE}/user/settings`, {
+    method: "GET",
+    headers: {
+      "Authorization": `Bearer ${token}`
+    }
+  })
+  .then(res => res.json())
+  .then(user => {
+    document.getElementById("fullname").value = user.fullname;
+    document.getElementById("age").value = user.age;
+    document.getElementById("email").value = user.email;
+    document.getElementById("password").value = "******";
+  })
+  .catch(err => {
+    console.error("Error loading settings:", err);
+    alert("Unable to load user settings.");
   });
+
+});
+
+
+// Save updated settings
+document.getElementById("settings-form").addEventListener("submit", (e) => {
+  e.preventDefault();
+
+  const payload = {
+    fullname: document.getElementById("fullname").value,
+    age: document.getElementById("age").value,
+    email: document.getElementById("email").value
+  };
+
+  const pw = document.getElementById("password").value;
+  if (pw !== "" && pw !== "******") {
+    payload.password = pw;
+  }
+
+  fetch(`${API_BASE}/user/settings`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`
+    },
+    body: JSON.stringify(payload)
+  })
+  .then(res => res.json())
+  .then(() => {
+    alert("✅ Settings updated successfully!");
+    location.reload();
+  })
+  .catch(err => {
+    console.error("Update error:", err);
+    alert("Could not update settings.");
+  });
+
+});
 </script>
+
 <script src="device.js"></script>
 <script src="logout.js"></script>
+
 </body>
 </html>
