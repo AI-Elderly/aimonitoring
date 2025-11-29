@@ -117,36 +117,34 @@ async function loadUserName() {
   }
 }
 
-// Validate alert level for missing data
-function validateAlert(latest) {
-  let level = latest.alert_level ?? 0;
-  let level_name = latest.alert_info?.level_name || getAlertName(level);
-
-  if (!latest.heart_rate || !latest.spo2) {
-    level = 2;
-    level_name = "Critical (No Signal)";
+// Determine alert for individual vital
+function getVitalAlert(vital, type) {
+  if (vital === null || vital === undefined || vital === 0) return { level: 2, label: "Critical (No Signal)" };
+  if (type === "hr") {
+    if (vital < 60 || vital > 100) return { level: 1, label: "Warning" };
+  } else if (type === "spo2") {
+    if (vital < 95) return { level: 1, label: "Warning" };
   }
-
-  return { level, level_name };
+  return { level: 0, label: "Normal" };
 }
 
 // Update badges
-function updateBadges({ level, level_name }) {
+function updateBadges(hr, spo2) {
   const hrBadge = document.getElementById("hr-badge");
   const spo2Badge = document.getElementById("spo2-badge");
 
-  [hrBadge, spo2Badge].forEach(badge => {
-    if (!badge) return;
-    badge.textContent = level_name;
-    badge.classList.remove('badge-normal','badge-warning','badge-critical');
-    if (level === 0) badge.classList.add('badge-normal');
-    else if (level === 1) badge.classList.add('badge-warning');
-    else badge.classList.add('badge-critical');
-  });
-}
+  const hrAlert = getVitalAlert(hr, "hr");
+  const spo2Alert = getVitalAlert(spo2, "spo2");
 
-// Alert helpers
-function getAlertName(level){ return {0:"Normal",1:"Warning",2:"Critical"}[level] || "Unknown"; }
+  hrBadge.textContent = hrAlert.label;
+  spo2Badge.textContent = spo2Alert.label;
+
+  hrBadge.className = 'alert-badge';
+  spo2Badge.className = 'alert-badge';
+
+  hrBadge.classList.add(hrAlert.level===0?"badge-normal":hrAlert.level===1?"badge-warning":"badge-critical");
+  spo2Badge.classList.add(spo2Alert.level===0?"badge-normal":spo2Alert.level===1?"badge-warning":"badge-critical");
+}
 
 // Load latest vitals
 async function loadVitals() {
@@ -155,13 +153,15 @@ async function loadVitals() {
 
   const latest = data[0];
 
-  // Update values
-  document.getElementById("hr-value").innerHTML = `${latest.heart_rate ?? "—"} <span>BPM</span>`;
-  document.getElementById("spo2-value").innerHTML = `${latest.spo2 ?? "—"}<span>%</span>`;
+  const hrValue = latest.heart_rate ?? 0;
+  const spo2Value = latest.spo2 ?? 0;
 
-  // Update badges
-  const validated = validateAlert(latest);
-  updateBadges(validated);
+  // Update values
+  document.getElementById("hr-value").innerHTML = `${hrValue} <span>BPM</span>`;
+  document.getElementById("spo2-value").innerHTML = `${spo2Value}<span>%</span>`;
+
+  // Update badges independently
+  updateBadges(hrValue, spo2Value);
 
   // Update chart
   updateChart(data);
