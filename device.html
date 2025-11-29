@@ -6,24 +6,68 @@
   <title>Device | AI Health Monitor</title>
   <link rel="stylesheet" href="styles.css" />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    .status-indicator {
+      font-weight: 600;
+      padding: 5px 10px;
+      border-radius: 5px;
+      display: inline-block;
+      margin-top: 10px;
+    }
+    .status-normal { color: #27ae60; }        /* Green for connected */
+    .status-disconnected { color: #e74c3c; } /* Red for disconnected */
+    .status-warning { color: #f1c40f; }      /* Yellow for connecting/warning */
+    .loading-spinner {
+      border: 4px solid #f3f3f3;
+      border-top: 4px solid #3498db;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      animation: spin 1s linear infinite;
+      display: inline-block;
+      vertical-align: middle;
+      margin-left: 10px;
+    }
+    .hidden { display: none; }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+    .device-card {
+      max-width: 400px;
+      margin: 40px auto;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      text-align: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .device-card h2 { margin-bottom: 10px; }
+    .device-card p { margin: 5px 0; }
+    .get-started-btn {
+      margin-top: 15px;
+      padding: 10px 20px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    .device-info ul { list-style: none; padding: 0; text-align: left; }
+    .device-info li { margin: 5px 0; }
+    .error-message { color: #e74c3c; font-weight: 500; margin-top: 10px; }
+  </style>
 </head>
 <body>
+
   <button class="back-btn" onclick="window.location.href='dashboard.html'">← Back</button>
+
   <div class="dashboard-container">
     <aside class="sidebar">
       <h2 class="logo">AI<span>Health</span></h2>
       <nav class="nav-links">
-        <a href="./dashboard.html">
-          <img src="dashboard.png" class="nav-icon"> Dashboard
-        </a>
+        <a href="./dashboard.html"><img src="dashboard.png" class="nav-icon"> Dashboard</a>
         <a href="./healthlogs.html">📋 Health Logs</a>
         <a href="./settings.html">⚙️ Settings</a>
         <a href="./device.html" class="active">🔌 Device</a>
         <a href="./ai-assistant.html">
-        
-  <img src="chatbot.jpg" alt="Chatbot Icon" style="width:24px; height:24px; border-radius:50%; vertical-align:middle;">
-  AlertoBot
-</a>
+          <img src="chatbot.jpg" alt="Chatbot Icon" style="width:24px; height:24px; border-radius:50%; vertical-align:middle;">
+          AlertoBot
+        </a>
         <a href="./about.html">ℹ️ About</a>
         <a href="./signin.html">🚪 Logout</a>
       </nav>
@@ -31,20 +75,29 @@
 
     <main class="main-content">
       <section class="device-section">
+
         <div class="device-card">
           <img src="device.png" alt="Device Icon" class="device-icon" />
           <h2>AI Health Device</h2>
-          <p id="device-status">🔴 No device connected</p>
+
+          <!-- Device Status Section -->
+          <p>
+            Device Status: 
+            <span id="device-status" class="status-indicator status-disconnected">🔴 Not Connected</span>
+            <span id="loading" class="loading-spinner hidden"></span>
+          </p>
+
           <p id="error-message" class="error-message"></p>
-          <div id="loading" class="loading-spinner hidden"></div>
+
           <button class="get-started-btn" id="connect-btn">🔗 Connect Device</button>
         </div>
 
+        <!-- Device Readings -->
         <div class="device-info hidden" id="device-info">
           <h3>Device Information</h3>
           <ul>
             <li><strong>Device Name:</strong> AIHealth Sensor V2</li>
-            <li><strong>Status:</strong> ✅ Connected</li>
+            <li><strong>Status:</strong> <span id="info-status">✅ Connected</span></li>
             <li><strong>Battery:</strong> 87%</li>
             <li><strong>Last Sync:</strong> Just now</li>
             <li><strong>Heart Rate:</strong> <span id="hr-value">--</span> bpm</li>
@@ -53,13 +106,12 @@
             <li><strong>RED:</strong> <span id="red-value">--</span></li>
           </ul>
         </div>
+
       </section>
     </main>
   </div>
 
-  <!-- ✅ Load your JS file correctly -->
   <script src="device.js"></script>
-<script src="logout.js"></script>
+  <script src="logout.js"></script>
 </body>
 </html>
--
