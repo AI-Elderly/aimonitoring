@@ -8,7 +8,6 @@
   <link rel="stylesheet" href="styles.css" />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
 </head>
-
 <body>
 
   <!-- Back Button -->
@@ -44,7 +43,6 @@
       <section class="settings-section">
         <form id="settings-form">
 
-          <!-- Full Name -->
           <div class="input-group">
             <label>Full Name</label>
             <div class="flex-row">
@@ -53,7 +51,6 @@
             </div>
           </div>
 
-          <!-- Age -->
           <div class="input-group">
             <label>Age</label>
             <div class="flex-row">
@@ -62,7 +59,6 @@
             </div>
           </div>
 
-          <!-- Email -->
           <div class="input-group">
             <label>Email</label>
             <div class="flex-row">
@@ -71,7 +67,6 @@
             </div>
           </div>
 
-          <!-- Password -->
           <div class="input-group">
             <label>Password</label>
             <div class="flex-row">
@@ -87,101 +82,90 @@
     </main>
   </div>
 
-<script>
-const API_BASE = "https://semimaterialistic-hyperbolic-laverne.ngrok-free.dev";
+  <script>
+  const API_BASE = "https://semimaterialistic-hyperbolic-laverne.ngrok-free.dev";
 
-// Load saved token
-
-// Unlock a field for editing
-function enableField(id) {
-  const field = document.getElementById(id);
-  if (id === "password") field.value = ""; // allow entering new password
-  field.disabled = false;
-  field.focus();
-}
-
-// Load user data on page load
-document.addEventListener("DOMContentLoaded", () => {
-
-  fetch(`${API_BASE}/user/settings`, {
-    method: "GET",
-    headers: {
-      "Authorization": `Bearer ${token}`,
-      "ngrok-skip-browser-warning": "true"
-    }
-  })
-  .then(async res => {
-    if (!res.ok) {
-      // Token expired or invalid
-      alert("Session expired. Please log in again.");
-      localStorage.removeItem("token");
-      window.location.href = "index.html";
-      return;
-    }
-    return res.json();
-  })
-  .then(user => {
-    if (!user) return;
-
-    // Fill input fields with DB values
-    document.getElementById("fullname").value = user.fullname || "";
-    document.getElementById("age").value = user.age || "";
-    document.getElementById("email").value = user.email || "";
-    document.getElementById("password").value = "******";
-  })
-  .catch(err => {
-    console.error("Error loading settings:", err);
-    alert("Failed to load your information.");
-  });
-
-});
-
-
-// Save updated settings
-document.getElementById("settings-form").addEventListener("submit", (e) => {
-  e.preventDefault();
-
-  const payload = {
-    fullname: document.getElementById("fullname").value,
-    age: document.getElementById("age").value,
-    email: document.getElementById("email").value
-  };
-
-  const pw = document.getElementById("password").value;
-  if (pw !== "" && pw !== "******") {
-    payload.password = pw;
+  // Unlock a field for editing
+  function enableField(id) {
+    const field = document.getElementById(id);
+    if (id === "password") field.value = ""; // allow entering new password
+    field.disabled = false;
+    field.focus();
   }
 
-  fetch(`${API_BASE}/user/settings`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${token}`,
-      "ngrok-skip-browser-warning": "true"
-    },
-    body: JSON.stringify(payload)
-  })
-  .then(async res => {
-    if (!res.ok) {
-      alert("Could not update settings.");
-      return;
-    }
-    return res.json();
-  })
-  .then(() => {
-    alert("✅ Settings updated successfully!");
-    location.reload();
-  })
-  .catch(err => {
-    console.error("Update error:", err);
-    alert("Error updating settings.");
+  // Load user data on page load
+  document.addEventListener("DOMContentLoaded", () => {
+    // Optional: you can still get the token if your backend uses it
+    const token = localStorage.getItem("token");
+
+    fetch(`${API_BASE}/user/settings`, {
+      method: "GET",
+      headers: token ? {
+        "Authorization": `Bearer ${token}`,
+        "ngrok-skip-browser-warning": "true"
+      } : {}
+    })
+    .then(async res => {
+      if (!res.ok) {
+        console.warn("Failed to load user settings.");
+        return;
+      }
+      return res.json();
+    })
+    .then(user => {
+      if (!user) return;
+
+      document.getElementById("fullname").value = user.fullname || "";
+      document.getElementById("age").value = user.age || "";
+      document.getElementById("email").value = user.email || "";
+      document.getElementById("password").value = "******";
+    })
+    .catch(err => console.error("Error loading settings:", err));
   });
 
-});
-</script>
+  // Save updated settings
+  document.getElementById("settings-form").addEventListener("submit", (e) => {
+    e.preventDefault();
 
-<script src="device.js"></script>
-<script src="logout.js"></script>
+    const token = localStorage.getItem("token");
+    const payload = {
+      fullname: document.getElementById("fullname").value,
+      age: document.getElementById("age").value,
+      email: document.getElementById("email").value
+    };
+
+    const pw = document.getElementById("password").value;
+    if (pw !== "" && pw !== "******") payload.password = pw;
+
+    fetch(`${API_BASE}/user/settings`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(token && {"Authorization": `Bearer ${token}`}),
+        "ngrok-skip-browser-warning": "true"
+      },
+      body: JSON.stringify(payload)
+    })
+    .then(async res => {
+      if (!res.ok) {
+        alert("Could not update settings.");
+        return;
+      }
+      return res.json();
+    })
+    .then(() => {
+      alert("✅ Settings updated successfully!");
+      location.reload();
+    })
+    .catch(err => {
+      console.error("Update error:", err);
+      alert("Error updating settings.");
+    });
+  });
+  </script>
+
+  <script src="device.js"></script>
+  <script src="logout.js"></script>
 
 </body>
 </html>
