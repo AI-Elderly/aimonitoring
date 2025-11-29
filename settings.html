@@ -85,6 +85,8 @@
   <script>
 const API_BASE = "https://semimaterialistic-hyperbolic-laverne.ngrok-free.dev";
 
+// ----------------- Utility Functions -----------------
+
 // Unlock a field for editing
 function enableField(id) {
   const field = document.getElementById(id);
@@ -93,37 +95,58 @@ function enableField(id) {
   field.focus();
 }
 
-// Load user data on page load
-document.addEventListener("DOMContentLoaded", async () => {
+// Check if response is HTML (e.g., ngrok error page)
+function isHTML(text) {
+  return text.trim().startsWith("<!DOCTYPE html>") || text.trim().startsWith("<html");
+}
+
+// ----------------- Load User Settings -----------------
+async function loadUserSettings() {
   const token = localStorage.getItem("token");
+  if (!token) {
+    alert("⚠️ You are not logged in. Redirecting to login page...");
+    window.location.href = "login.html";
+    return;
+  }
 
   try {
     const res = await fetch(`${API_BASE}/user/settings`, {
       method: "GET",
-      headers: token ? {
+      headers: {
         "Authorization": `Bearer ${token}`,
         "ngrok-skip-browser-warning": "true"
-      } : {}
+      }
     });
 
-    const text = await res.text(); // read response as text first
+    const text = await res.text();
+
+    if (isHTML(text)) {
+      console.error("Received HTML instead of JSON:", text);
+      alert("⚠️ Server returned invalid response. Are you logged in?");
+      return;
+    }
 
     if (!res.ok) {
-      console.error(`Server returned status ${res.status}:`, text);
-      alert("Failed to load settings. Check console for details.");
+      if (res.status === 401) {
+        alert("⚠️ Session expired. Please log in again.");
+        localStorage.removeItem("token");
+        window.location.href = "login.html";
+      } else {
+        console.error(`Server returned status ${res.status}:`, text);
+        alert("Failed to load settings. Check console for details.");
+      }
       return;
     }
 
     let user;
     try {
-      user = JSON.parse(text); // try to parse JSON
+      user = JSON.parse(text);
     } catch (err) {
       console.error("Failed to parse JSON. Server returned:", text);
       alert("Invalid response from server.");
       return;
     }
 
-    // Fill input fields with DB values
     document.getElementById("fullname").value = user.fullname || "";
     document.getElementById("age").value = user.age || "";
     document.getElementById("email").value = user.email || "";
@@ -131,15 +154,21 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   } catch (err) {
     console.error("Fetch error:", err);
-    alert("Error connecting to server.");
+    alert("Error connecting to server. Check console for details.");
   }
-});
+}
 
-// Save updated settings
-document.getElementById("settings-form").addEventListener("submit", async (e) => {
+// ----------------- Save Updated Settings -----------------
+async function saveUserSettings(e) {
   e.preventDefault();
 
   const token = localStorage.getItem("token");
+  if (!token) {
+    alert("⚠️ You are not logged in. Redirecting to login page...");
+    window.location.href = "login.html";
+    return;
+  }
+
   const payload = {
     fullname: document.getElementById("fullname").value,
     age: document.getElementById("age").value,
@@ -154,7 +183,7 @@ document.getElementById("settings-form").addEventListener("submit", async (e) =>
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        ...(token && { "Authorization": `Bearer ${token}` }),
+        "Authorization": `Bearer ${token}`,
         "ngrok-skip-browser-warning": "true"
       },
       body: JSON.stringify(payload)
@@ -162,9 +191,21 @@ document.getElementById("settings-form").addEventListener("submit", async (e) =>
 
     const text = await res.text();
 
+    if (isHTML(text)) {
+      console.error("Received HTML instead of JSON:", text);
+      alert("⚠️ Server returned invalid response. Settings not saved.");
+      return;
+    }
+
     if (!res.ok) {
-      console.error(`Server returned status ${res.status}:`, text);
-      alert("Could not update settings. Check console for details.");
+      if (res.status === 401) {
+        alert("⚠️ Session expired. Please log in again.");
+        localStorage.removeItem("token");
+        window.location.href = "login.html";
+      } else {
+        console.error(`Server returned status ${res.status}:`, text);
+        alert("Could not update settings. Check console for details.");
+      }
       return;
     }
 
@@ -182,8 +223,13 @@ document.getElementById("settings-form").addEventListener("submit", async (e) =>
     console.error("Fetch error:", err);
     alert("Error updating settings.");
   }
-});
+}
+
+// ----------------- Event Listeners -----------------
+document.addEventListener("DOMContentLoaded", loadUserSettings);
+document.getElementById("settings-form").addEventListener("submit", saveUserSettings);
 </script>
+
 
 
   <script src="device.js"></script>
