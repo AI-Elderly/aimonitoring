@@ -1,98 +1,98 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Health Logs | AI Health Monitor</title>
-<link rel="stylesheet" href="styles.css" />
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Health Logs | AI Health Monitor</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
 
-<style>
-.table-wrapper {
-  max-height: 300px;
-  overflow-y: auto;
-  border: 1px solid #e5e5e5;
-  border-radius: 10px;
-  background: white;
-  margin-top: 10px;
-}
-.vitals-grid {
-  display: flex;
-  gap: 20px;
-}
-.vital-box {
-  background: #fff;
-  padding: 10px;
-  border-radius: 10px;
-  flex: 1;
-  text-align: center;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-.back-btn {
-  margin: 10px;
-  padding: 5px 15px;
-  cursor: pointer;
-}
-</style>
+  <style>
+    .table-wrapper {
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid #e5e5e5;
+      border-radius: 10px;
+      background: white;
+      margin-top: 10px;
+    }
+    .vitals-grid {
+      display: flex;
+      gap: 20px;
+    }
+    .vital-box {
+      background: #fff;
+      padding: 10px;
+      border-radius: 10px;
+      flex: 1;
+      text-align: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .back-btn {
+      margin: 10px;
+      padding: 5px 15px;
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
 
-<button class="back-btn" onclick="window.location.href='dashboard.html'">← Back</button>
+  <button class="back-btn" onclick="window.location.href='dashboard.html'">← Back</button>
 
-<div class="dashboard-container">
-  <aside class="sidebar">
-    <h2 class="logo">AI<span>Health</span></h2>
-    <nav class="nav-links">
-      <a href="./dashboard.html"><img src="dashboard.png" class="nav-icon"> Dashboard</a>
-      <a href="./healthlogs.html" class="active">📋 Health Logs</a>
-      <a href="./settings.html">⚙️ Settings</a>
-      <a href="./device.html">🔌 Device</a>
-      <a href="./ai-assistant.html">
-        <img src="chatbot.jpg" style="width:24px; height:24px; border-radius:50%; vertical-align:middle;">
-        AlertoBot
-      </a>
-      <a href="./about.html">ℹ️ About</a>
-      <a href="./signin.html">🚪 Logout</a>
-    </nav>
-  </aside>
+  <div class="dashboard-container">
+    <aside class="sidebar">
+      <h2 class="logo">AI<span>Health</span></h2>
+      <nav class="nav-links">
+        <a href="./dashboard.html"><img src="dashboard.png" class="nav-icon"> Dashboard</a>
+        <a href="./healthlogs.html" class="active">📋 Health Logs</a>
+        <a href="./settings.html">⚙️ Settings</a>
+        <a href="./device.html">🔌 Device</a>
+        <a href="./ai-assistant.html">
+          <img src="chatbot.jpg" style="width:24px; height:24px; border-radius:50%; vertical-align:middle;">
+          AlertoBot
+        </a>
+        <a href="./about.html">ℹ️ About</a>
+        <a href="./signin.html">🚪 Logout</a>
+      </nav>
+    </aside>
 
-  <main class="main-content">
-    <header class="dashboard-header">
-      <h1>Health Logs</h1>
-      <p>Your recent monitoring records from ESP32 sensor</p>
-    </header>
+    <main class="main-content">
+      <header class="dashboard-header">
+        <h1>Health Logs</h1>
+        <p>Your recent monitoring records from ESP32 sensor</p>
+      </header>
 
-    <section class="live-vitals">
-      <h2>📡 Latest Reading</h2>
-      <div class="vitals-grid">
-        <div class="vital-box"><h3>❤️ Heart Rate</h3><p id="live-heart-rate">—</p></div>
-        <div class="vital-box"><h3>🌬️ SpO₂</h3><p id="live-spo2">—</p></div>
-        <div class="vital-box"><h3>🕒 Timestamp (PHT)</h3><p id="live-timestamp">—</p></div>
-      </div>
-    </section>
+      <section class="live-vitals">
+        <h2>📡 Latest Reading</h2>
+        <div class="vitals-grid">
+          <div class="vital-box"><h3>❤️ Heart Rate</h3><p id="live-heart-rate">—</p></div>
+          <div class="vital-box"><h3>🌬️ SpO₂</h3><p id="live-spo2">—</p></div>
+          <div class="vital-box"><h3>🕒 Timestamp</h3><p id="live-timestamp">—</p></div>
+        </div>
+      </section>
 
-    <section class="logs-section">
-      <h2>📋 Recent Health Records</h2>
-      <button id="refresh-btn">🔄 Refresh</button>
+      <section class="logs-section">
+        <h2>📋 Recent Health Records</h2>
+        <button id="refresh-btn">🔄 Refresh</button>
 
-      <div class="table-wrapper">
-        <table class="logs-table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Time (PHT)</th>
-              <th>❤️ Heart Rate</th>
-              <th>🌬️ SpO₂</th>
-            </tr>
-          </thead>
-          <tbody id="health-log-body">
-            <tr><td colspan="4" style="text-align:center; padding:15px;">Loading...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-  </main>
-</div>
+        <div class="table-wrapper">
+          <table class="logs-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Time (PHT)</th>
+                <th>❤️ Heart Rate</th>
+                <th>🌬️ SpO₂</th>
+              </tr>
+            </thead>
+            <tbody id="health-log-body">
+              <tr><td colspan="4" style="text-align:center; padding:15px;">Loading...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
 
 <script>
 const FLASK_URL = "https://semimaterialistic-hyperbolic-laverne.ngrok-free.dev";
@@ -100,17 +100,17 @@ const token = localStorage.getItem("access_token");
 const tableBody = document.getElementById("health-log-body");
 const refreshBtn = document.getElementById("refresh-btn");
 
-// Convert timestamp to Philippine Time (UTC+8)
+// Convert timestamp to Philippine Time (PHT)
 function formatDateTimePHT(ts) {
   if (!ts || isNaN(Date.parse(ts))) return { date: "—", time: "—" };
   const d = new Date(ts);
-
-  // Convert UTC to PHT (+8 hours)
-  const pht = new Date(d.getTime() + 8*60*60*1000);
+  
+  const optionsDate = { timeZone: 'Asia/Manila', year: 'numeric', month: '2-digit', day: '2-digit' };
+  const optionsTime = { timeZone: 'Asia/Manila', hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' };
 
   return {
-    date: pht.toLocaleDateString("en-CA"),
-    time: pht.toLocaleTimeString("en-US", { hour12: false })
+    date: d.toLocaleDateString('en-CA', optionsDate),
+    time: d.toLocaleTimeString('en-GB', optionsTime)
   };
 }
 
@@ -128,10 +128,9 @@ function renderRow(r) {
 function updateLatestVitals(records) {
   if (!records.length) return;
   const r = records[0];
-  const t = formatDateTimePHT(r.timestamp);
   document.getElementById("live-heart-rate").textContent = r.heart_rate ?? "—";
   document.getElementById("live-spo2").textContent = r.spo2 ?? "—";
-  document.getElementById("live-timestamp").textContent = t.time;
+  document.getElementById("live-timestamp").textContent = formatDateTimePHT(r.timestamp).time;
 }
 
 async function fetchJSON(url, options = {}) {
@@ -178,6 +177,7 @@ refreshBtn.addEventListener("click", loadHealthLogs);
 loadHealthLogs();
 setInterval(loadHealthLogs, 5000);
 </script>
+
 <script src="logout.js"></script>
 </body>
 </html>
