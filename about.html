@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>About | AI Health Monitor</title>
+
+  <link rel="stylesheet" href="styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    .about-wrapper {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+    }
+
+    .about-container {
+      padding: 20px;
+      width: 90%;
+      max-width: 1000px;
+      text-align: center;
+    }
+
+    .about-title {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .about-desc {
+      font-size: 16px;
+      line-height: 1.6;
+      margin: 0 auto 30px auto;
+      max-width: 850px;
+    }
+
+    .team-section {
+      margin-top: 50px;
+    }
+
+    .team-title {
+      font-size: 26px;
+      font-weight: 700;
+      margin-bottom: 25px;
+    }
+
+    .team-grid {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 25px;
+    }
+
+    /* Dev Card Styles */
+    .dev-card {
+      width: 220px;
+      background: #fff;
+      border-radius: 12px;
+      padding: 15px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+      text-align: center;
+      transition: transform 0.35s ease, box-shadow 0.35s ease;
+      cursor: pointer;
+    }
+
+    /* Hover Animation */
+    .dev-card:hover {
+      transform: translateY(-8px) scale(1.03);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.18);
+    }
+
+    .dev-photo {
+      width: 100%;
+      height: 180px;
+      object-fit: cover;
+      border-radius: 10px;
+      background: #ccc;
+    }
+
+    .dev-name {
+      font-size: 18px;
+      font-weight: 600;
+      margin-top: 10px;
+    }
+
+    .dev-role {
+      font-size: 14px;
+      color: #666;
+    }
+
+    /* Modal Background */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 2000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.6);
+  animation: fadeIn 0.3s ease;
+}
+
+/* Modal Box */
+.modal-content {
+  background: #fff;
+  width: 90%;
+  max-width: 450px;
+  margin: 7% auto;
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+  animation: popIn 0.3s ease;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+/* Developer Modal Photo */
+.modal-photo {
+  width: 160px;
+  height: 160px;
+  border-radius: 12px;
+  object-fit: cover;
+  margin-bottom: 15px;
+}
+
+/* Close Button */
+.close {
+  float: right;
+  font-size: 28px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes popIn {
+  from { transform: scale(0.8); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* Updated Professional Modal Styling */
+.professional-modal {
+  max-width: 520px;
+  padding: 35px 40px;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+  animation: fadeIn 0.22s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.close {
+  font-size: 26px;
+  font-weight: bold;
+  color: #444;
+  position: absolute;
+  right: 25px;
+  top: 20px;
+  cursor: pointer;
+}
+
+.modal-header {
+  text-align: center;
+  margin-bottom: 25px;
+}
+
+.modal-photo {
+  width: 140px;
+  height: 140px;
+  object-fit: cover;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.modal-name {
+  font-size: 26px;
+  font-weight: 700;
+  margin: 8px 0 3px;
+  color: #1d2d50;
+}
+
+.modal-role {
+  font-size: 15px;
+  font-weight: 600;
+  color: #377dff;
+  margin-bottom: 15px;
+}
+
+.modal-section {
+  margin: 28px 0;
+  text-align: center;
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  color: #444;
+}
+
+.modal-section p {
+  font-size: 15px;
+  color: #555;
+  line-height: 1.5;
+}
+
+.contribution-list {
+  text-align: left;
+  margin-top: 10px;
+  padding-left: 18px;
+  line-height: 1.6;
+}
+
+.contribution-list li {
+  margin-bottom: 8px;
+  color: #333;
+}
+
+
+  </style>
+</head>
+
+<body>
+  <button class="back-btn" onclick="window.location.href='dashboard.html'">← Back</button>
+
+  <div class="dashboard-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <h2 class="logo">AI<span>Health</span></h2>
+      <nav class="nav-links">
+        <a href="./dashboard.html"><img src="dashboard.png" class="nav-icon"> Dashboard</a>
+        <a href="./healthlogs.html">📋 Health Logs</a>
+        <a href="./settings.html">⚙️ Settings</a>
+        <a href="./device.html">🔌 Device</a>
+        <a href="./ai-assistant.html">
+          <img src="chatbot.jpg" style="width:24px; height:24px; border-radius:50%; vertical-align:middle;">
+          AlertoBot
+        </a>
+        <a href="./about.html" class="active">ℹ️ About</a>
+        <a href="./signin.html">🚪 Logout</a>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="about-wrapper">
+        <div class="about-container">
+
+          <!-- Overview -->
+          <h1 class="about-title">About This Project</h1>
+          <p class="about-desc">
+            The AI Elderly Health Monitoring System helps users track real-time vital signs including heart rate and SpO₂ using ESP32 and MAX30102 sensors. 
+            It includes a smart dashboard, AI assistant, cloud-based monitoring, and real-time data visualization.
+            <br><br>
+            This system is created by a multidisciplinary team specializing in UI/UX, backend development, database management, IoT hardware, and documentation.
+          </p>
+
+          <!-- Developer Section -->
+          <div class="team-section">
+  <h2 class="team-title">Meet the Developers</h2>
+
+  <div class="team-grid">
+
+    <!-- Example Developer Card (Copy for all devs) -->
+    <div class="dev-card" onclick="openModal('dev1')">
+      <img src="sun.png" class="dev-photo">
+      <div class="dev-name">Frontend Dev Name</div>
+      <div class="dev-role">Frontend Developer / UI UX</div>
+    </div>
+
+    <div class="dev-card" onclick="openModal('dev2')">
+      <img src="jazz.png" class="dev-photo">
+      <div class="dev-name">Frontend Dev Name</div>
+      <div class="dev-role">Frontend Developer / UI UX</div>
+    </div>
+
+    <div class="dev-card" onclick="openModal('dev3')">
+      <img src="manalo.png" class="dev-photo">
+      <div class="dev-name">Progress Creator</div>
+      <div class="dev-role">Progress Report Creator</div>
+    </div>
+
+    <div class="dev-card" onclick="openModal('dev4')">
+      <img src="lana.png" class="dev-photo">
+      <div class="dev-name">MySQL Dev</div>
+      <div class="dev-role">MySQL Developer</div>
+    </div>
+
+    <div class="dev-card" onclick="openModal('dev5')">
+      <img src="manel.png" class="dev-photo">
+      <div class="dev-name">Backend Dev</div>
+      <div class="dev-role">Backend Developer</div>
+    </div>
+
+    <div class="dev-card" onclick="openModal('dev6')">
+      <img src="jen.png" class="dev-photo">
+      <div class="dev-name">Backend Dev</div>
+      <div class="dev-role">Backend Developer</div>
+    </div>
+
+    <div class="dev-card" onclick="openModal('dev7')">
+      <img src="harris.png" class="dev-photo">
+      <div class="dev-name">Hardware Dev</div>
+      <div class="dev-role">Hardware Developer</div>
+    </div>
+
+    <div class="dev-card" onclick="openModal('dev8')">
+      <img src="jonas.png" class="dev-photo">
+      <div class="dev-name">IoT Developer</div>
+      <div class="dev-role">IoT Hardware Developer</div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ========================== -->
+<!-- MODALS FOR EACH DEVELOPER -->
+<!-- ========================== -->
+
+<!-- Example Modal -->
+<div id="dev1" class="modal">
+  <div class="modal-content professional-modal">
+
+    <span class="close" onclick="closeModal('dev1')">&times;</span>
+
+    <div class="modal-header">
+      <img src="sun.png" class="modal-photo" alt="Developer Photo">
+      <h2 class="modal-name">Sunshine Lepaña</h2>
+      <h4 class="modal-role">Frontend Developer</h4>
+    </div>
+
+    <div class="modal-section">
+      <h3 class="section-title">Year & Course</h3>
+      <p>4th Year Bachelor of Science in Computer Engineering</p>
+    </div>
+
+    <div class="modal-section">
+      <h3 class="section-title">School</h3>
+      <p>Laguna State Polytechnic University - San Pablo City Campus</p>
+    </div>
+
+    <div class="modal-section">
+      <h3 class="section-title">Contributions</h3>
+      <ul class="contribution-list">
+        <li>Implement responsive layouts for multi-device compatibility</li>
+        <li>Improve UI/UX through organized page structure</li>
+        <li>Ensure accessibility using proper tags, labels, and attributes</li>
+        <li>Maintain consistency in layout and content presentation</li>
+      </ul>
+    </div>
+
+  </div>
+</div>
+
+
+
+<!-- DEV 2 MODAL -->
+<div id="dev2" class="modal">
+  <div class="modal-content professional-modal">
+    <span class="close" onclick="closeModal('dev2')">&times;</span>
+
+    <div class="modal-header">
+      <img src="jazz.png" class="modal-photo" alt="Developer Photo">
+      <h2 class="modal-name">Jazztin M. Isabedra</h2>
+      <h4 class="modal-role">Frontend Developer</h4>
+    </div>
+
+    <div class="modal-section">
+      <h3 class="section-title">Year & Course</h3>
+      <p>4th Year Bachelor of Science in Computer Engineering</p>
+    </div>
+
+    <div class="modal-section">
+      <h3 class="section-title">Email</h3>
+      <p>isabedrajazz@gmail.com</p>
+    </div>
+
+    <div class="modal-section">
+      <h3 class="section-title">Contributions</h3>
+      <ul class="contribution-list">
+        <li>Improved the user interface and user experience</li>
+        <li>Designed clean, responsive, user-friendly layouts</li>
+        <li>Styled components for consistency and clarity</li>
+        <li>Enhanced interactivity and user flow</li>
+        <li>Ensured front-end matched project branding & requirements</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+
+<!-- DEV 3 MODAL -->
+<div id="dev3" class="modal">
+  <div class="modal-content professional-modal">
+    <span class="close" onclick="closeModal('dev3')">&times;</span>
+
+    <div class="modal-header">
+      <img src="manalo.png" class="modal-photo" alt="Developer Photo">
+      <h2 class="modal-name">Carl Justin D. Manalo</h2>
+      <h4 class="modal-role">Progress Report Creator</h4>
+    </div>
+
+    <div class="modal-section">
+      <h3 class="section-title">Year & Course</h3>
+      <p>4th Year Bachelor of Science in Computer Engineering</p>
+    </div>
+
+    <div class="modal-section">
+      <h3 class="section-title">Email</h3>
+      <p>cjmanalo525@gmail.com</p>
+    </div>
+
+    <div class="modal-section">
+      <h3 class="section-title">Contributions</h3>
+      <ul class="contribution-list">
+        <li>Summarized group accomplishments for reports</li>
+        <li>Checked progress alignment with planned timeline</li>
+        <li>Highlighted completed tasks and areas for improvement</li>
+        <li>Coordinated with teammates for updates</li>
+        <li>Ensured reports were clear, organized, and goal-aligned</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+
+<!-- DEV 4 MODAL -->
+<div id="dev4" class="modal">
+  <div class="modal-content professional-modal">
+    <span class="close" onclick="closeModal('dev4')">&times;</span>
+
+    <div class="modal-header">
+      <img src="lana.png" class="modal-photo" alt="Developer Photo">
+      <h2 class="modal-name">Lana Reece R. Uy</h2>
+      <h4 class="modal-role">MySQL / Database Developer</h4>
+    </div>
+
+    <div class="modal-section">
+      <h3 class="section-title">Year & Course</h3>
+      <p>4th Year Bachelor of Science in Computer Engineering</p>
+    </div>
+
+    <div class="modal-section">
+      <h3 class="section-title">Email</h3>
+      <p>lana.rplxy@gmail.com</p>
+    </div>
+
+    <div class="modal-section">
+      <h3 class="section-title">Contributions</h3>
+      <ul class="contribution-list">
+        <li>Ensured secure and organized data storage</li>
+        <li>Identified required system data such as profiles and records</li>
+        <li>Designed normalized tables for efficiency</li>
+        <li>Aligned database structure with AI and front-end requirements</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+
+<!-- DEV 5 MODAL -->
+<div id="dev5" class="modal">
+  <div class="modal-content professional-modal">
+    <span class="close" onclick="closeModal('dev5')">&times;</span>
+
+    <div class="modal-header">
+      <img src="manel.png" class="modal-photo" alt="Developer Photo">
+      <h2 class="modal-name">Marinell A. Endaya</h2>
+      <h4 class="modal-role">Backend Developer</h4>
+    </div>
+
+    <div class="modal-section">
+      <h3 class="section-title">Year & Course</h3>
+      <p>4th Year Bachelor of Science in Computer Engineering</p>
+    </div>
+
+    <div class="modal-section">
+      <h3 class="section-title">Email</h3>
+      <p>endayamarinell@gmail.com</p>
+    </div>
+
+    <div class="modal-section">
+      <h3 class="section-title">Contributions</h3>
+      <ul class="contribution-list">
+        <li>Designed overall backend architecture</li>
+        <li>Managed user, device, and health record databases</li>
+        <li>Developed schema, utilities, and CRUD operations</li>
+        <li>Created APIs connecting frontend to backend</li>
+        <li>Integrated AI model for health risk analysis</li>
+        <li>Implemented error handling and sensor data processing</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+
+<!-- DEV 6 MODAL -->
+<div id="dev6" class="modal">
+  <div class="modal-content professional-modal">
+    <span class="close" onclick="closeModal('dev6')">&times;</span>
+
+    <div class="modal-header">
+      <img src="jen.png" class="modal-photo" alt="Developer Photo">
+      <h2 class="modal-name">Jenvhee P. Guevarra</h2>
+      <h4 class="modal-role">Backend Developer</h4>
+    </div>
+
+    <div class="modal-section">
+      <h3 class="section-title">Year & Course</h3>
+      <p>4th Year Bachelor of Science in Computer Engineering</p>
+    </div>
+
+    <div class="modal-section">
+      <h3 class="section-title">Email</h3>
+      <p>jenvheeguevarra@gmail.com</p>
+    </div>
+
+    <div class="modal-section">
+      <h3 class="section-title">Contributions</h3>
+      <ul class="contribution-list">
+        <li>Monitored servers, databases, and APIs</li>
+        <li>Handled API testing and validation</li>
+        <li>Ensured system uptime and responsiveness</li>
+        <li>Debugged backend functions and sensor data handling</li>
+        <li>Analyzed server logs and performance issues</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- DEV 7 MODAL -->
+<div id="dev7" class="modal">
+  <div class="modal-content professional-modal">
+    <span class="close" onclick="closeModal('dev7')">&times;</span>
+
+    <div class="modal-header">
+      <img src="harris.png" class="modal-photo" alt="Developer Photo">
+      <h2 class="modal-name">Mark Harris M. Malveda</h2>
+      <h4 class="modal-role">IoT Developer</h4>
+    </div>
+
+    <div class="modal-section">
+      <h3 class="section-title">Year & Course</h3>
+      <p>4th Year Bachelor of Science in Computer Engineering</p>
+    </div>
+
+    <div class="modal-section">
+      <h3 class="section-title">Email</h3>
+      <p>Harrismalveda88@gmail.com</p>
+    </div>
+
+    <div class="modal-section">
+      <h3 class="section-title">Contributions</h3>
+      <ul class="contribution-list">
+        <li>Tested all hardware components</li>
+        <li>Built device and soldered sensor connections</li>
+        <li>Verified sensor output via Arduino terminal</li>
+        <li>Ensured proper hardware functionality</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+
+<!-- DEV 8 MODAL -->
+<div id="dev8" class="modal">
+  <div class="modal-content professional-modal">
+    <span class="close" onclick="closeModal('dev8')">&times;</span>
+
+    <div class="modal-header">
+      <img src="jonas.png" class="modal-photo" alt="Developer Photo">
+      <h2 class="modal-name">Jonas Bartolome</h2>
+      <h4 class="modal-role">IoT Developer</h4>
+    </div>
+
+    <div class="modal-section">
+      <h3 class="section-title">Year & Course</h3>
+      <p>4th Year Bachelor of Science in Computer Engineering</p>
+    </div>
+
+    <div class="modal-section">
+      <h3 class="section-title">Contributions</h3>
+      <ul class="contribution-list">
+        <li>Handled ESP32 coding and program integration</li>
+        <li>Tested all components through Arduino serial monitor</li>
+        <li>Ensured proper communication between sensors & code</li>
+        <li>Debugged and verified device programs</li>
+        <li>Checked device outputs for proper functionality</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+
+
+        </div>
+      </div>
+    </main>
+  </div>
+<script>
+function openModal(id) {
+  document.getElementById(id).style.display = "block";
+}
+
+function closeModal(id) {
+  document.getElementById(id).style.display = "none";
+}
+
+// Close modal if clicked outside the content
+window.onclick = function(event) {
+  document.querySelectorAll(".modal").forEach(m => {
+    if (event.target === m) m.style.display = "none";
+  });
+};
+</script>
+<script src="logout.js"></script>
+</body>
+</html>

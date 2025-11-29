@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign In | AI Health Monitor</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
+  <script>
+    // Apply dark mode immediately before page renders
+    (function() {
+      const theme = localStorage.getItem('theme') || 'light';
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark-mode');
+      }
+    })();
+  </script>
+</head>
+
+<body>
+  <button class="back-btn" onclick="window.location.href='signup.html'">← Back</button>
+
+  <div class="container signin-container">
+    <div class="hero">
+      <img src="medical.png" alt="Medical Icon" class="hero-img" />
+
+      <h1 class="signin-title">Welcome Back</h1>
+      <p class="signin-subtitle">Sign in to continue your health journey</p>
+
+      <form id="loginForm" class="signin-form">
+        <div class="input-group">
+          <input type="email" id="email" placeholder="Email" required />
+        </div>
+        <div class="input-group">
+          <input type="password" id="password" placeholder="Password" required />
+        </div>
+
+        <div class="remember-me">
+          <label>
+            <input type="checkbox" id="rememberMe" /> Remember Me
+          </label>
+        </div>
+
+        <button class="get-started-btn" type="submit">
+          Sign In
+        </button>
+
+        <p class="signup-link">
+          Don't have an account?
+          <a href="signup.html">Sign Up</a>
+        </p>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Apply saved theme on page load
+    if (localStorage.getItem('theme') === 'dark') {
+      document.body.classList.add('dark-mode');
+    }
+
+    // ✅ Flask backend URL
+    const FLASK_URL = 'https://semimaterialistic-hyperbolic-laverne.ngrok-free.dev';
+
+    // Auto-redirect if already logged in
+window.onload = function () {
+  const token = localStorage.getItem("access_token");
+  if (token) {
+    window.location.href = "dashboard.html";
+  }
+};
+
+
+    // Login function: calls Flask backend
+    async function login(email, password) {
+      try {
+        console.log("🔐 Attempting login to Flask...");
+        
+        const res = await fetch(`${FLASK_URL}/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await res.json();
+        console.log("Login response:", data);
+
+        if (res.ok && data.access_token) {
+          localStorage.setItem("access_token", data.access_token);
+          localStorage.setItem("user_id", data.user_id);
+          alert("✅ Login successful!");
+          window.location.href = "dashboard.html";
+        } else {
+          alert("❌ Login failed: " + (data.error || "Invalid credentials"));
+        }
+      } catch (err) {
+        console.error("Error:", err);
+        alert(`❌ Could not connect to backend at ${FLASK_URL}. Make sure Flask is running.`);
+      }
+    }
+
+    // Attach login form submit
+    document.getElementById("loginForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value.trim();
+      login(email, password);
+    });
+  </script>
+</body>
+</html>

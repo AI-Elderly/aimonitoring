@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Health Monitor | Get Started</title>
+
+  <link rel="stylesheet" href="styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* Dark Mode Toggle Button */
+    .dark-mode-toggle {
+      position: absolute;
+      top: 25px;
+      right: 25px;
+      background: #ffffff;
+      color: #2c3e50;
+      border: 2px solid #e1e8ed;
+      font-size: 24px;
+      padding: 12px 16px;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 50px;
+      height: 50px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .dark-mode-toggle:hover {
+      transform: scale(1.1);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    body.dark-mode .dark-mode-toggle {
+      background: #2c2c2c;
+      border-color: #3a3a3a;
+      color: #ffd700;
+    }
+
+    /* Make images visible in dark mode */
+    body.dark-mode .hero-img {
+      filter: brightness(0.9) contrast(1.1);
+      background: #f5f7fa;
+      padding: 10px;
+      border-radius: 50%;
+    }
+  </style>
+</head>
+<body>
+  <!-- Dark Mode Toggle Button -->
+  <button class="dark-mode-toggle" id="darkModeToggle" title="Toggle Dark Mode">
+    <span id="modeIcon">🌙</span>
+  </button>
+
+  <div class="container">
+    <div class="hero">
+      <div class="image-area">
+        <img src="elder1.png" alt="Elder Icon" class="hero-img">
+        <img src="medical.png" alt="Medical Icon" class="hero-img">
+      </div>
+
+      <h1>Welcome to <span class="highlight">AI Powered Elderly Health Risk Monitoring System</span></h1>
+      <p>Your intelligent, non-invasive health tracking system.</p>
+
+      <div class="button-group">
+        <button class="get-started-btn" onclick="window.location.href='signup.html'">
+          Create Account
+        </button>
+        <p class="signup-link">
+          Already have an account?
+          <a href="signin.html">Sign In</a>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Dark Mode Toggle Functionality
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    const modeIcon = document.getElementById('modeIcon');
+    const body = document.body;
+
+    // Check for saved theme preference or default to 'light'
+    const currentTheme = localStorage.getItem('theme') || 'light';
+
+    // Apply the saved theme on page load
+    if (currentTheme === 'dark') {
+      body.classList.add('dark-mode');
+      modeIcon.textContent = '☀️';
+    } else {
+      body.classList.remove('dark-mode');
+      modeIcon.textContent = '🌙';
+    }
+
+    // Toggle dark mode on button click
+    darkModeToggle.addEventListener('click', () => {
+      body.classList.toggle('dark-mode');
+      
+      // Update icon and save preference
+      if (body.classList.contains('dark-mode')) {
+        modeIcon.textContent = '☀️';
+        localStorage.setItem('theme', 'dark');
+      } else {
+        modeIcon.textContent = '🌙';
+        localStorage.setItem('theme', 'light');
+      }
+    });
+  </script>
+  <script src="script.js" defer></script>
+</body>
+</html>

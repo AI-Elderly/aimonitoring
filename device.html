@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Device | AI Health Monitor</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <button class="back-btn" onclick="window.location.href='dashboard.html'">← Back</button>
+  <div class="dashboard-container">
+    <aside class="sidebar">
+      <h2 class="logo">AI<span>Health</span></h2>
+      <nav class="nav-links">
+        <a href="./dashboard.html">
+          <img src="dashboard.png" class="nav-icon"> Dashboard
+        </a>
+        <a href="./healthlogs.html">📋 Health Logs</a>
+        <a href="./settings.html">⚙️ Settings</a>
+        <a href="./device.html" class="active">🔌 Device</a>
+        <a href="./ai-assistant.html">
+        
+  <img src="chatbot.jpg" alt="Chatbot Icon" style="width:24px; height:24px; border-radius:50%; vertical-align:middle;">
+  AlertoBot
+</a>
+        <a href="./about.html">ℹ️ About</a>
+        <a href="./signin.html">🚪 Logout</a>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <section class="device-section">
+        <div class="device-card">
+          <img src="device.png" alt="Device Icon" class="device-icon" />
+          <h2>AI Health Device</h2>
+          <p id="device-status">🔴 No device connected</p>
+          <p id="error-message" class="error-message"></p>
+          <div id="loading" class="loading-spinner hidden"></div>
+          <button class="get-started-btn" id="connect-btn">🔗 Connect Device</button>
+        </div>
+
+        <div class="device-info hidden" id="device-info">
+          <h3>Device Information</h3>
+          <ul>
+            <li><strong>Device Name:</strong> AIHealth Sensor V2</li>
+            <li><strong>Status:</strong> ✅ Connected</li>
+            <li><strong>Battery:</strong> 87%</li>
+            <li><strong>Last Sync:</strong> Just now</li>
+            <li><strong>Heart Rate:</strong> <span id="hr-value">--</span> bpm</li>
+            <li><strong>SpO₂:</strong> <span id="spo2-value">--</span>%</li>
+            <li><strong>IR:</strong> <span id="ir-value">--</span></li>
+            <li><strong>RED:</strong> <span id="red-value">--</span></li>
+          </ul>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ✅ Load your JS file correctly -->
+  <script src="device.js"></script>
+<script src="logout.js"></script>
+</body>
+</html>
+-
