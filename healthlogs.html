@@ -33,6 +33,11 @@
       padding: 5px 15px;
       cursor: pointer;
     }
+    .nav-icon {
+      width: 20px;
+      vertical-align: middle;
+      margin-right: 5px;
+    }
   </style>
 </head>
 <body>
@@ -100,25 +105,33 @@ const token = localStorage.getItem("access_token");
 const tableBody = document.getElementById("health-log-body");
 const refreshBtn = document.getElementById("refresh-btn");
 
-// -------------------------------
-// Philippine Time Formatter
-// -------------------------------
-function formatPHDateTime(ts) {
+// Convert UTC timestamp to Philippine Time (Asia/Manila)
+function formatDateTime(ts) {
   if (!ts) return { date: "—", time: "—" };
-  const d = new Date(ts);
-  const optionsDate = { year: "numeric", month: "2-digit", day: "2-digit", timeZone: "Asia/Manila" };
-  const optionsTime = { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false, timeZone: "Asia/Manila" };
-  return {
-    date: d.toLocaleDateString("en-CA", optionsDate),
-    time: d.toLocaleTimeString("en-GB", optionsTime)
-  };
+  try {
+    const utcDate = new Date(ts);
+    const options = {
+      timeZone: "Asia/Manila",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false
+    };
+    const formatter = new Intl.DateTimeFormat("en-PH", options);
+    const parts = formatter.formatToParts(utcDate);
+    const date = `${parts.find(p => p.type === "year").value}-${parts.find(p => p.type === "month").value}-${parts.find(p => p.type === "day").value}`;
+    const time = `${parts.find(p => p.type === "hour").value}:${parts.find(p => p.type === "minute").value}:${parts.find(p => p.type === "second").value}`;
+    return { date, time };
+  } catch {
+    return { date: "—", time: "—" };
+  }
 }
 
-// -------------------------------
-// Render Table Row
-// -------------------------------
 function renderRow(r) {
-  const t = formatPHDateTime(r.timestamp);
+  const t = formatDateTime(r.timestamp);
   return `
     <tr>
       <td>${t.date}</td>
@@ -128,20 +141,14 @@ function renderRow(r) {
     </tr>`;
 }
 
-// -------------------------------
-// Update Latest Reading
-// -------------------------------
 function updateLatestVitals(records) {
   if (!records.length) return;
   const r = records[0];
   document.getElementById("live-heart-rate").textContent = r.heart_rate ?? "—";
   document.getElementById("live-spo2").textContent = r.spo2 ?? "—";
-  document.getElementById("live-timestamp").textContent = formatPHDateTime(r.timestamp).time;
+  document.getElementById("live-timestamp").textContent = formatDateTime(r.timestamp).time;
 }
 
-// -------------------------------
-// Fetch Wrapper
-// -------------------------------
 async function fetchJSON(url, options = {}) {
   options.headers = {
     ...(options.headers || {}),
@@ -157,9 +164,6 @@ async function fetchJSON(url, options = {}) {
   }
 }
 
-// -------------------------------
-// Load Health Logs
-// -------------------------------
 async function loadHealthLogs() {
   if (!token) {
     tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:red;">⚠️ You must log in first.</td></tr>`;
@@ -185,14 +189,10 @@ async function loadHealthLogs() {
   updateLatestVitals(data);
 }
 
-// -------------------------------
-// Event Listeners
-// -------------------------------
 refreshBtn.addEventListener("click", loadHealthLogs);
 loadHealthLogs();
 setInterval(loadHealthLogs, 5000);
 </script>
-
 <script src="logout.js"></script>
 </body>
 </html>
