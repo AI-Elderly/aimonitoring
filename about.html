@@ -9,165 +9,143 @@
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
 
   <style>
-    .about-wrapper {
-      width: 100%;
-      display: flex;
-      justify-content: center;
-    }
 
-    .about-container {
-      padding: 20px;
-      width: 90%;
-      max-width: 1000px;
-      text-align: center;
-    }
+/* ===========================
+   ABOUT SECTION LAYOUT
+=========================== */
+.about-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
 
-    .about-title {
-      font-size: 32px;
-      font-weight: 700;
-      margin-bottom: 10px;
-    }
+.about-container {
+  padding: 20px;
+  width: 90%;
+  max-width: 1000px;
+  text-align: center;
+}
 
-    .about-desc {
-      font-size: 16px;
-      line-height: 1.6;
-      margin: 0 auto 30px auto;
-      max-width: 850px;
-    }
+.about-title {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
 
-    .team-section {
-      margin-top: 50px;
-    }
+.about-desc {
+  font-size: 16px;
+  line-height: 1.6;
+  margin: 0 auto 30px;
+  max-width: 850px;
+}
 
-    .team-title {
-      font-size: 26px;
-      font-weight: 700;
-      margin-bottom: 25px;
-    }
+/* ===========================
+   TEAM SECTION
+=========================== */
+.team-section {
+  margin-top: 50px;
+}
 
-    .team-grid {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 25px;
-    }
+.team-title {
+  font-size: 26px;
+  font-weight: 700;
+  margin-bottom: 25px;
+}
 
-    /* Dev Card Styles */
-    .dev-card {
-      width: 220px;
-      background: #fff;
-      border-radius: 12px;
-      padding: 15px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.12);
-      text-align: center;
-      transition: transform 0.35s ease, box-shadow 0.35s ease;
-      cursor: pointer;
-    }
+.team-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 25px;
+}
 
-    /* Hover Animation */
-    .dev-card:hover {
-      transform: translateY(-8px) scale(1.03);
-      box-shadow: 0 10px 20px rgba(0,0,0,0.18);
-    }
+/* ===========================
+   DEVELOPER CARD
+=========================== */
+.dev-card {
+  width: 220px;
+  background: #fff;
+  border-radius: 12px;
+  padding: 15px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+  text-align: center;
+  transition: transform 0.35s ease, box-shadow 0.35s ease;
+  cursor: pointer;
+}
 
-    .dev-photo {
-      width: 100%;
-      height: 180px;
-      object-fit: cover;
-      border-radius: 10px;
-      background: #ccc;
-    }
+.dev-card:hover {
+  transform: translateY(-8px) scale(1.03);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.18);
+}
 
-    .dev-name {
-      font-size: 18px;
-      font-weight: 600;
-      margin-top: 10px;
-    }
+.dev-photo {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 10px;
+  background: #ccc;
+}
 
-    .dev-role {
-      font-size: 14px;
-      color: #666;
-    }
+.dev-name {
+  font-size: 18px;
+  font-weight: 600;
+  margin-top: 10px;
+}
 
-    /* Modal Background */
+.dev-role {
+  font-size: 14px;
+  color: #666;
+}
+
+/* ===========================
+   MODAL BACKDROP
+=========================== */
 .modal {
   display: none;
   position: fixed;
   z-index: 2000;
-  left: 0;
-  top: 0;
+  inset: 0;
   width: 100%;
   height: 100%;
   background: rgba(0,0,0,0.6);
   animation: fadeIn 0.3s ease;
+  overflow-y: auto;              /* Fix: modal scrolls on small screens */
 }
 
-/* Modal Box */
-.modal-content {
-  background: #fff;
-  width: 90%;
-  max-width: 450px;
-  margin: 7% auto;
-  padding: 20px;
-  border-radius: 12px;
-  text-align: center;
-  animation: popIn 0.3s ease;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-}
-
-/* Developer Modal Photo */
-.modal-photo {
-  width: 160px;
-  height: 160px;
-  border-radius: 12px;
-  object-fit: cover;
-  margin-bottom: 15px;
-}
-
-/* Close Button */
-.close {
-  float: right;
-  font-size: 28px;
-  cursor: pointer;
-  font-weight: bold;
-}
-
-/* Animations */
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes popIn {
-  from { transform: scale(0.8); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
-}
-
-/* Updated Professional Modal Styling */
+/* ===========================
+   MODAL CONTAINER
+=========================== */
+.modal-content,
 .professional-modal {
+  width: 90%;
   max-width: 520px;
+  margin: 6% auto;
   padding: 35px 40px;
+  background: #fff;
   border-radius: 18px;
-  background: #ffffff;
+  position: relative;
   box-shadow: 0 10px 40px rgba(0,0,0,0.15);
-  animation: fadeIn 0.22s ease-out;
+  max-height: 90vh;             /* Fix: modal fits screen height */
+  overflow-y: auto;             /* Fix: inner scroll */
+  animation: fadeInScale 0.25s ease-out;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: scale(0.97); }
-  to { opacity: 1; transform: scale(1); }
-}
-
+/* ===========================
+   CLOSE BUTTON
+=========================== */
 .close {
-  font-size: 26px;
-  font-weight: bold;
-  color: #444;
   position: absolute;
   right: 25px;
   top: 20px;
+  font-size: 26px;
+  font-weight: bold;
+  color: #444;
   cursor: pointer;
 }
 
+/* ===========================
+   MODAL HEADER CONTENT
+=========================== */
 .modal-header {
   text-align: center;
   margin-bottom: 25px;
@@ -196,6 +174,9 @@
   margin-bottom: 15px;
 }
 
+/* ===========================
+   MODAL BODY SECTIONS
+=========================== */
 .modal-section {
   margin: 28px 0;
   text-align: center;
@@ -214,11 +195,12 @@
   line-height: 1.5;
 }
 
+/* Contribution List */
 .contribution-list {
   text-align: left;
-  margin-top: 10px;
   padding-left: 18px;
   line-height: 1.6;
+  margin-top: 10px;
 }
 
 .contribution-list li {
@@ -226,8 +208,21 @@
   color: #333;
 }
 
+/* ===========================
+   ANIMATIONS
+=========================== */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
 
-  </style>
+@keyframes fadeInScale {
+  from { opacity: 0; transform: scale(0.95); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+</style>
+
 </head>
 
 <body>
