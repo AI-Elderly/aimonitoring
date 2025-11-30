@@ -3,193 +3,326 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Health Logs | AI Health Monitor</title>
+  <title>Settings | AI Health Monitor</title>
+
   <link rel="stylesheet" href="styles.css" />
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
 
   <style>
-    .table-wrapper {
-      max-height: 300px;
-      overflow-y: auto;
-      border: 1px solid #e5e5e5;
-      border-radius: 10px;
-      background: white;
-      margin-top: 10px;
-    }
-    .vitals-grid {
-      display: flex;
-      gap: 20px;
-    }
-    .vital-box {
-      background: #fff;
-      padding: 10px;
-      border-radius: 10px;
-      flex: 1;
-      text-align: center;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    .back-btn {
-      margin: 10px;
-      padding: 5px 15px;
-      cursor: pointer;
-    }
-    .nav-icon {
-      width: 24px;
-      height: 24px;
-      vertical-align: middle;
-      margin-right: 8px;
-    }
+    /* ===== General Styles ===== */
+/* ===== Main Content Container ===== */
+.main-content {
+  flex: 1;
+  padding: 40px 50px;
+}
+
+/* ===== Form Card ===== */
+.settings-section {
+  margin-top: 30px;
+  background-color: #ffffff; /* white card */
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+  max-width: 600px;
+}
+
+/* ===== Input Groups ===== */
+.input-group {
+  margin-bottom: 20px;
+}
+
+.input-group label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #333;
+}
+
+/* Flex row for input + edit button */
+.flex-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Input styling */
+.flex-row input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border 0.2s ease;
+}
+
+.flex-row input:focus {
+  border-color: #4f46e5; /* subtle focus color */
+  outline: none;
+}
+
+/* Edit button next to input */
+.edit-btn {
+  background-color: #4f46e5; /* primary purple */
+  color: #fff;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.2s ease;
+}
+
+.edit-btn:hover {
+  background-color: #4338ca;
+}
+
+/* Save changes button */
+.get-started-btn {
+  background-color: #10b981; /* green */
+  color: #fff;
+  border: none;
+  padding: 12px 20px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 10px;
+  width: 100%;
+  transition: all 0.2s ease;
+}
+
+.get-started-btn:hover {
+  background-color: #059669;
+}
+
+/* Responsive adjustments */
+@media (max-width: 900px) {
+  .main-content {
+    padding: 20px;
+  }
+  .settings-section {
+    padding: 20px;
+  }
+}
+
   </style>
 </head>
 <body>
 
+  <!-- Back Button -->
   <button class="back-btn" onclick="window.location.href='dashboard.html'">← Back</button>
 
   <div class="dashboard-container">
+    
+    <!-- Sidebar -->
     <aside class="sidebar">
       <h2 class="logo">AI<span>Health</span></h2>
       <nav class="nav-links">
         <a href="./dashboard.html"><img src="dashboard.png" class="nav-icon"> Dashboard</a>
         <a href="./healthlogs.html">📋 Health Logs</a>
-        <a href="./settings.html" class="active">⚙️ Settings</a>
-        <a href="./device.html">🔌 Device</a>
+        <a href="./settings.html">⚙️ Settings</a>
+        <a href="device.html">🔌 Device</a>
         <a href="./ai-assistant.html">
-          <img src="chatbot.jpg" style="width:24px; height:24px; border-radius:50%; vertical-align:middle;">
+          <img src="chatbot.jpg" alt="Chatbot Icon" style="width:24px; height:24px; border-radius:50%; vertical-align:middle;">
           AlertoBot
         </a>
         <a href="./about.html">ℹ️ About</a>
-        <a href="./signin.html">🚪 Logout</a>
+        <a href="#" id="logout-btn">🚪 Logout</a>
       </nav>
     </aside>
 
+    <!-- Main Content -->
     <main class="main-content">
       <header class="dashboard-header">
-        <h1>Health Logs</h1>
-        <p>Your recent monitoring records from ESP32 sensor</p>
+        <h1>User Settings</h1>
+        <p>Manage your account and preferences</p>
       </header>
 
-      <section class="live-vitals">
-        <h2>📡 Latest Reading</h2>
-        <div class="vitals-grid">
-          <div class="vital-box"><h3>❤️ Heart Rate</h3><p id="live-heart-rate">—</p></div>
-          <div class="vital-box"><h3>🌬️ SpO₂</h3><p id="live-spo2">—</p></div>
-          <div class="vital-box"><h3>🕒 Timestamp</h3><p id="live-timestamp">—</p></div>
-        </div>
-      </section>
+      <!-- Settings Form -->
+      <section class="settings-section">
+        <form id="settings-form">
 
-      <section class="logs-section">
-        <h2>📋 Recent Health Records</h2>
-        <button id="refresh-btn">🔄 Refresh</button>
+          <div class="input-group">
+            <label>Full Name</label>
+            <div class="flex-row">
+              <input type="text" id="fullname" disabled />
+              <button type="button" class="edit-btn" onclick="enableField('fullname')">Edit</button>
+            </div>
+          </div>
 
-        <div class="table-wrapper">
-          <table class="logs-table">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Time</th>
-                <th>❤️ Heart Rate</th>
-                <th>🌬️ SpO₂</th>
-              </tr>
-            </thead>
-            <tbody id="health-log-body">
-              <tr><td colspan="4" style="text-align:center; padding:15px;">Loading...</td></tr>
-            </tbody>
-          </table>
-        </div>
+          <div class="input-group">
+            <label>Age</label>
+            <div class="flex-row">
+              <input type="number" id="age" disabled min="1" max="120" />
+              <button type="button" class="edit-btn" onclick="enableField('age')">Edit</button>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label>Email</label>
+            <div class="flex-row">
+              <input type="email" id="email" disabled />
+              <button type="button" class="edit-btn" onclick="enableField('email')">Edit</button>
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label>Password</label>
+            <div class="flex-row">
+              <input type="password" id="password" value="******" disabled />
+              <button type="button" class="edit-btn" onclick="enableField('password')">Edit</button>
+            </div>
+          </div>
+
+          <button type="submit" class="get-started-btn">Save Changes</button>
+
+        </form>
       </section>
     </main>
   </div>
 
 <script>
-const FLASK_URL = "https://semimaterialistic-hyperbolic-laverne.ngrok-free.dev";
-const token = localStorage.getItem("access_token");
-const tableBody = document.getElementById("health-log-body");
-const refreshBtn = document.getElementById("refresh-btn");
+const API_BASE = "https://semimaterialistic-hyperbolic-laverne.ngrok-free.dev";
 
-// --- Philippine Time formatter ---
-const phFormatter = new Intl.DateTimeFormat("en-PH", {
-  timeZone: "Asia/Manila",
-  year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
-  hour: "2-digit",
-  minute: "2-digit",
-  second: "2-digit",
-  hour12: false
+// Unlock a field for editing
+function enableField(id) {
+  const field = document.getElementById(id);
+  if (id === "password") field.value = ""; // allow entering new password
+  field.disabled = false;
+  field.focus();
+}
+
+// Load user data on page load
+document.addEventListener("DOMContentLoaded", async () => {
+  const token = localStorage.getItem("access_token"); // ✅ use correct token key
+
+  if (!token) {
+    alert("⚠️ You are not logged in. Please sign in first.");
+    window.location.href = "signin.html";
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API_BASE}/user/settings`, {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "ngrok-skip-browser-warning": "true"
+      }
+    });
+
+    const text = await res.text(); // read as text first
+
+    // Detect HTML responses (ngrok error page)
+    if (text.trim().startsWith("<!DOCTYPE html>")) {
+      console.error("⚠️ Received HTML instead of JSON:", text);
+      alert("Server returned HTML instead of JSON. Your session may have expired. Please log in again.");
+      localStorage.removeItem("access_token");
+      window.location.href = "signin.html";
+      return;
+    }
+
+    // Try parsing JSON
+    let user;
+    try {
+      user = JSON.parse(text);
+    } catch (err) {
+      console.error("⚠️ Failed to parse JSON:", text);
+      alert("Invalid response from server. Try logging in again.");
+      return;
+    }
+
+    if (res.status === 401) {
+      // Token invalid or expired
+      console.warn("⚠️ Unauthorized:", user);
+      alert("Your session has expired or token is invalid. Please sign in again.");
+      localStorage.removeItem("access_token");
+      window.location.href = "signin.html";
+      return;
+    }
+
+    // Fill input fields
+    document.getElementById("fullname").value = user.fullname || "";
+    document.getElementById("age").value = user.age || "";
+    document.getElementById("email").value = user.email || "";
+    document.getElementById("password").value = "******";
+
+  } catch (err) {
+    console.error("❌ Fetch error:", err);
+    alert("Error connecting to server. Make sure Flask is running and accessible.");
+  }
 });
 
-function formatDateTime(ts) {
-  if (!ts || isNaN(Date.parse(ts))) return { date: "—", time: "—" };
-  const d = new Date(ts);
-  const parts = phFormatter.formatToParts(d);
-  const date = `${parts.find(p => p.type === "year").value}-${parts.find(p => p.type === "month").value}-${parts.find(p => p.type === "day").value}`;
-  const time = `${parts.find(p => p.type === "hour").value}:${parts.find(p => p.type === "minute").value}:${parts.find(p => p.type === "second").value}`;
-  return { date, time };
-}
+// Save updated settings
+document.getElementById("settings-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const token = localStorage.getItem("access_token");
 
-function renderRow(r) {
-  const t = formatDateTime(r.timestamp);
-  return `
-    <tr>
-      <td>${t.date}</td>
-      <td>${t.time}</td>
-      <td>${r.heart_rate ?? "—"}</td>
-      <td>${r.spo2 ?? "—"}</td>
-    </tr>`;
-}
-
-function updateLatestVitals(records) {
-  if (!records.length) return;
-  const r = records[0];
-  document.getElementById("live-heart-rate").textContent = r.heart_rate ?? "—";
-  document.getElementById("live-spo2").textContent = r.spo2 ?? "—";
-  document.getElementById("live-timestamp").textContent = formatDateTime(r.timestamp).time;
-}
-
-async function fetchJSON(url, options = {}) {
-  options.headers = {
-    ...(options.headers || {}),
-    "ngrok-skip-browser-warning": "true"
-  };
-  try {
-    const res = await fetch(url, options);
-    const text = await res.text();
-    return { ok: res.ok, data: JSON.parse(text) };
-  } catch (err) {
-    console.error("❌ NGROK returned HTML or invalid JSON:", err);
-    return { ok: false, error: "Invalid JSON from server" };
-  }
-}
-
-async function loadHealthLogs() {
   if (!token) {
-    tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">⚠️ You must log in first.</td></tr>`;
+    alert("⚠️ You are not logged in. Please sign in first.");
+    window.location.href = "signin.html";
     return;
   }
 
-  const { ok, data, error } = await fetchJSON(`${FLASK_URL}/healthlogs`, {
-    method: "GET",
-    headers: { "Authorization": `Bearer ${token}` }
-  });
+  const payload = {
+    fullname: document.getElementById("fullname").value,
+    age: document.getElementById("age").value,
+    email: document.getElementById("email").value
+  };
 
-  if (!ok) {
-    tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:red;">❌ Error loading logs<br><small>${error}</small></td></tr>`;
-    return;
+  const pw = document.getElementById("password").value;
+  if (pw !== "" && pw !== "******") payload.password = pw;
+
+  try {
+    const res = await fetch(`${API_BASE}/user/settings`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+        "ngrok-skip-browser-warning": "true"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const text = await res.text();
+
+    // Detect HTML responses
+    if (text.trim().startsWith("<!DOCTYPE html>")) {
+      console.error("⚠️ Received HTML instead of JSON:", text);
+      alert("Server returned HTML instead of JSON. Your session may have expired. Please log in again.");
+      localStorage.removeItem("access_token");
+      window.location.href = "signin.html";
+      return;
+    }
+
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = null; // ignore if no JSON
+    }
+
+    if (!res.ok) {
+      console.error(`⚠️ Server returned status ${res.status}:`, data || text);
+      alert("Could not update settings. Check console for details.");
+      return;
+    }
+
+    alert("✅ Settings updated successfully!");
+    location.reload();
+
+  } catch (err) {
+    console.error("❌ Fetch error:", err);
+    alert("Error updating settings. Make sure Flask is running and accessible.");
   }
-
-  if (!Array.isArray(data) || data.length === 0) {
-    tableBody.innerHTML = `<tr><td colspan="6" style="text-align:center;">📭 No records found.</td></tr>`;
-    return;
-  }
-
-  tableBody.innerHTML = data.map(renderRow).join("");
-  updateLatestVitals(data);
-}
-
-refreshBtn.addEventListener("click", loadHealthLogs);
-loadHealthLogs();
-setInterval(loadHealthLogs, 5000);
+});
 </script>
-<script src="logout.js"></script>
+
+
+
+
+  <script src="device.js"></script>
+  <script src="logout.js"></script>
+
 </body>
 </html>
