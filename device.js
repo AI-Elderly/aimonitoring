@@ -1,4 +1,4 @@
-// device.js - FULL DEBUG VERSION
+// device.js - FIXED VERSION with correct data handling
 
 if (!document.getElementById("connect-btn")) {
     console.warn("⚠️ device.js loaded on non-device page. Script skipped.");
@@ -28,12 +28,24 @@ if (!document.getElementById("connect-btn")) {
   console.log("Token exists:", !!getToken());
 
   function updateDeviceInfoUI(data) {
-      console.log("📊 Updating UI with data:", data);
-      document.getElementById("hr-value").textContent = data.heart_rate ?? "--";
-      document.getElementById("spo2-value").textContent = data.spo2 ?? "--";
-      document.getElementById("ir-value").textContent = data.ir ?? "--";
-      document.getElementById("red-value").textContent = data.red ?? "--";
+      console.log("📊 Updating UI with raw data:", JSON.stringify(data));
+      
+      // ⭐ Handle different possible data formats
+      const hr = data.heart_rate || data.heartRate || data.bpm || data.hr || 0;
+      const spo2 = data.spo2 || data.SpO2 || data.oxygen || 0;
+      const ir = data.ir || data.IR || 0;
+      const red = data.red || data.RED || 0;
+      
+      console.log(`📈 Parsed values - HR: ${hr}, SpO2: ${spo2}, IR: ${ir}, RED: ${red}`);
+      
+      document.getElementById("hr-value").textContent = hr;
+      document.getElementById("spo2-value").textContent = spo2;
+      document.getElementById("ir-value").textContent = ir;
+      document.getElementById("red-value").textContent = red;
       deviceInfo.classList.remove("hidden");
+      
+      // ⭐ Return parsed values for backend storage
+      return { heart_rate: hr, spo2: spo2, ir: ir, red: red };
   }
 
   async function fetchJSON(url, options = {}) {
@@ -48,7 +60,7 @@ if (!document.getElementById("connect-btn")) {
           const text = await res.text();
           try {
               const data = JSON.parse(text);
-              console.log(`✅ Response OK:`, data);
+              console.log(`✅ Response received:`, data);
               return { ok: res.ok, data };
           } catch {
               console.error("❌ Invalid JSON response:", text.substring(0, 200));
@@ -67,7 +79,7 @@ if (!document.getElementById("connect-btn")) {
           return;
       }
       
-      console.log("📤 SENDING TO BACKEND:", payload);
+      console.log("📤 SENDING TO BACKEND:", JSON.stringify(payload, null, 2));
       
       const { ok, data, error } = await fetchJSON(`${backendURL}/sensor-readings`, {
           method: "POST",
@@ -78,18 +90,18 @@ if (!document.getElementById("connect-btn")) {
       if (!ok) {
           console.error("❌ Backend storage FAILED:", error);
       } else {
-          console.log("✅ Backend stored successfully! Reading ID:", data.reading_id);
+          console.log(`✅ Backend stored successfully! Reading ID: ${data.reading_id}`);
       }
   }
 
   // ⭐ Poll ESP32 and send to backend
   async function pollReadings() {
       pollCount++;
-      console.log(`\n📡 [Poll #${pollCount}] Fetching ESP32 readings...`);
+      console.log(`\n📡 [Poll #${pollCount}] ================================`);
       
       try {
           const endpoint = useProxy ? `${esp32Proxy}/readings` : `${esp32Direct}/readings`;
-          console.log(`Using endpoint: ${endpoint}`);
+          console.log(`Endpoint: ${endpoint}`);
           
           const res = await fetchJSON(endpoint);
 
@@ -102,8 +114,8 @@ if (!document.getElementById("connect-btn")) {
               throw new Error(res.error || "ESP32 unreachable");
           }
 
-          const data = res.data;
-          console.log("📊 ESP32 Data received:", data);
+          const rawData = res.data;
+          console.log("📦 RAW ESP32 Response:", JSON.stringify(rawData, null, 2));
 
           // Device is connected
           if (!isConnected) {
@@ -115,19 +127,27 @@ if (!document.getElementById("connect-btn")) {
               console.log("✅ ESP32 connection established");
           }
 
-          updateDeviceInfoUI(data);
+          // ⭐ Update UI and get parsed values
+          const parsedData = updateDeviceInfoUI(rawData);
+          console.log("✨ Parsed for backend:", JSON.stringify(parsedData, null, 2));
 
-          // ⭐ CRITICAL: Send to backend immediately
+          // ⭐ CRITICAL: Use the PARSED values, not raw data
           const payload = {
               user_id: Number(getUserId()) || 1,
-              heart_rate: data.heart_rate ?? null,
-              spo2: data.spo2 ?? null,
-              ir: data.ir ?? null,
-              red: data.red ?? null
+              heart_rate: parsedData.heart_rate,
+              spo2: parsedData.spo2,
+              ir: parsedData.ir,
+              red: parsedData.red
           };
           
-          console.log("Prepared payload for backend:", payload);
-          await sendReadingToBackend(payload);
+          console.log("🎯 Final payload:", JSON.stringify(payload, null, 2));
+          
+          // Only send if we have valid readings (not all zeros)
+          if (payload.heart_rate > 0 || payload.spo2 > 0) {
+              await sendReadingToBackend(payload);
+          } else {
+              console.warn("⚠️ Skipping backend send - all values are 0 (sensor warming up?)");
+          }
 
           errorMessage.textContent = "";
 
@@ -141,6 +161,8 @@ if (!document.getElementById("connect-btn")) {
           deviceInfo.classList.add("hidden");
           connectBtn.textContent = "Connect Device";
       }
+      
+      console.log(`================================ [End Poll #${pollCount}]\n`);
   }
 
   // Initialize on page load
