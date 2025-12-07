@@ -21,6 +21,49 @@
 .card .alert-badge.badge-normal { color: #3498db !important; }
 .card .alert-badge.badge-warning { color: #e67e22 !important; }
 .card .alert-badge.badge-critical { color: #e74c3c !important; }
+
+/* DEBUG PANEL */
+.debug-panel {
+  position: fixed;
+  bottom: 10px;
+  right: 10px;
+  background: rgba(0,0,0,0.9);
+  color: #0f0;
+  padding: 15px;
+  border-radius: 8px;
+  font-family: monospace;
+  font-size: 12px;
+  max-width: 400px;
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 9999;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+.debug-panel h4 {
+  margin: 0 0 10px 0;
+  color: #0ff;
+  border-bottom: 1px solid #0ff;
+  padding-bottom: 5px;
+}
+.debug-log {
+  margin: 5px 0;
+  padding: 5px;
+  background: rgba(0,255,0,0.1);
+  border-left: 3px solid #0f0;
+}
+.debug-error {
+  color: #f00;
+  background: rgba(255,0,0,0.1);
+  border-left: 3px solid #f00;
+}
+.debug-success {
+  color: #0f0;
+}
+.debug-warning {
+  color: #ff0;
+  background: rgba(255,255,0,0.1);
+  border-left: 3px solid #ff0;
+}
 </style>
 <script>
 (function() {
@@ -32,6 +75,12 @@
 <body>
 
 <button class="back-btn" onclick="window.location.href='signin.html'">← Back</button>
+
+<!-- DEBUG PANEL -->
+<div class="debug-panel" id="debug-panel">
+  <h4>🐛 Debug Console</h4>
+  <div id="debug-logs"></div>
+</div>
 
 <div class="dashboard-container">
   <aside class="sidebar">
@@ -86,6 +135,25 @@ const token = localStorage.getItem("access_token");
 if (!token) window.location.href = "signin.html";
 
 let pollInterval = null;
+let lastRecordId = null;
+let pollCount = 0;
+
+// DEBUG LOGGER
+const debugLogs = document.getElementById("debug-logs");
+function debugLog(message, type = "log") {
+  const time = new Date().toLocaleTimeString();
+  const div = document.createElement("div");
+  div.className = `debug-${type}`;
+  div.textContent = `[${time}] ${message}`;
+  debugLogs.insertBefore(div, debugLogs.firstChild);
+  
+  // Keep only last 20 logs
+  while (debugLogs.children.length > 20) {
+    debugLogs.removeChild(debugLogs.lastChild);
+  }
+  
+  console.log(`[DEBUG ${type.toUpperCase()}]`, message);
+}
 
 // Logout
 document.getElementById("logout-btn").addEventListener("click", e => {
@@ -94,8 +162,10 @@ document.getElementById("logout-btn").addEventListener("click", e => {
   window.location.href = "signin.html";
 });
 
-// ⭐ Enhanced fetch wrapper with better error handling
+// Enhanced fetch wrapper
 async function fetchJSON(url, options = {}) {
+  debugLog(`Fetching: ${url}`, "log");
+  
   options.headers = { 
     ...(options.headers || {}), 
     "Authorization": `Bearer ${token}`, 
@@ -104,17 +174,25 @@ async function fetchJSON(url, options = {}) {
     "Pragma": "no-cache",
     "Expires": "0"
   };
+  
   try {
-    const res = await fetch(url, options);
+    // Add timestamp to prevent caching
+    const cacheBuster = `?_t=${Date.now()}`;
+    const finalUrl = url.includes('?') ? `${url}&_t=${Date.now()}` : `${url}${cacheBuster}`;
+    
+    const res = await fetch(finalUrl, options);
     const text = await res.text();
+    
     try { 
-      return { ok: res.ok, data: JSON.parse(text) }; 
+      const data = JSON.parse(text);
+      debugLog(`✓ Received ${Array.isArray(data) ? data.length : 1} records`, "success");
+      return { ok: res.ok, data }; 
     } catch { 
-      console.error("Invalid JSON response:", text);
+      debugLog(`✗ Invalid JSON response`, "error");
       return { ok: false, error: "Invalid JSON", raw: text }; 
     }
   } catch (err) { 
-    console.error("Fetch error:", err);
+    debugLog(`✗ Fetch failed: ${err.message}`, "error");
     return { ok: false, error: "Fetch failed", raw: err }; 
   }
 }
@@ -125,6 +203,7 @@ async function loadUserName() {
   if (!ok) return;
   if (data.fullname) {
     document.getElementById("welcome-text").innerText = `Welcome, ${data.fullname.split(" ")[0]} 👋`;
+    debugLog(`User: ${data.fullname}`, "success");
   }
 }
 
@@ -157,33 +236,47 @@ function updateBadges(hr, spo2) {
   spo2Badge.classList.add(spo2Alert.level===0?"badge-normal":spo2Alert.level===1?"badge-warning":"badge-critical");
 }
 
-// ⭐ Load latest vitals with timestamp logging
+// Load latest vitals
 async function loadVitals() {
-  console.log(`[${new Date().toLocaleTimeString()}] Fetching vitals...`);
+  pollCount++;
+  debugLog(`Poll #${pollCount} - Fetching vitals...`, "log");
   
   const { ok, data } = await fetchJSON(`${API_URL}/healthlogs`);
   
   if (!ok) {
-    console.error("Failed to fetch vitals");
+    debugLog("Failed to fetch vitals", "error");
     return;
   }
   
   if (!Array.isArray(data) || !data.length) {
-    console.warn("No data received");
+    debugLog("No data received", "warning");
     return;
   }
 
   const latest = data[0];
-  console.log("Latest reading:", latest);
+  const currentRecordId = latest.id;
+  
+  // Check if this is new data
+  if (lastRecordId === null) {
+    debugLog(`Initial record ID: ${currentRecordId}`, "success");
+  } else if (currentRecordId !== lastRecordId) {
+    debugLog(`🎉 NEW DATA! Old ID: ${lastRecordId} → New ID: ${currentRecordId}`, "success");
+  } else {
+    debugLog(`Same record ID: ${currentRecordId} (no new data)`, "warning");
+  }
+  
+  lastRecordId = currentRecordId;
 
   const hrValue = latest.heart_rate ?? 0;
   const spo2Value = latest.spo2 ?? 0;
+  
+  debugLog(`HR: ${hrValue} bpm | SpO₂: ${spo2Value}% | Time: ${latest.timestamp}`, "success");
 
   // Update values
   document.getElementById("hr-value").innerHTML = `${hrValue} <span>BPM</span>`;
   document.getElementById("spo2-value").innerHTML = `${spo2Value}<span>%</span>`;
 
-  // Update badges independently
+  // Update badges
   updateBadges(hrValue, spo2Value);
 
   // Update chart
@@ -222,45 +315,50 @@ function updateChart(records) {
   healthChart.update();
 }
 
-// ⭐ Start/Stop polling based on visibility
+// Start/Stop polling
 function startPolling() {
-  if (pollInterval) return; // Already polling
-  console.log("✅ Started polling");
-  pollInterval = setInterval(loadVitals, 2000); // Poll every 2 seconds
+  if (pollInterval) return;
+  debugLog("✅ Started polling (every 2 seconds)", "success");
+  pollInterval = setInterval(loadVitals, 2000);
 }
 
 function stopPolling() {
   if (!pollInterval) return;
-  console.log("⏸️ Stopped polling");
+  debugLog("⏸️ Stopped polling", "warning");
   clearInterval(pollInterval);
   pollInterval = null;
 }
 
-// ⭐ Visibility change detection
+// Visibility change detection
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) {
+    debugLog("Page hidden - stopping poll", "warning");
     stopPolling();
   } else {
-    console.log("📱 Page visible - refreshing immediately");
-    loadVitals(); // Immediate refresh
-    startPolling(); // Resume polling
+    debugLog("Page visible - refreshing immediately", "success");
+    loadVitals();
+    startPolling();
   }
 });
 
-// ⭐ Focus detection
+// Focus detection
 window.addEventListener("focus", () => {
-  console.log("🔍 Window focused - refreshing");
+  debugLog("Window focused - refreshing", "success");
   loadVitals();
   startPolling();
 });
 
 window.addEventListener("blur", () => {
+  debugLog("Window blurred - stopping poll", "warning");
   stopPolling();
 });
 
-// ⭐ Initial load
+// Initial load
 document.addEventListener("DOMContentLoaded", () => {
-  console.log("🚀 Dashboard loaded");
+  debugLog("🚀 Dashboard loaded", "success");
+  debugLog(`API: ${API_URL}`, "log");
+  debugLog(`Token: ${token ? 'Present' : 'Missing'}`, token ? "success" : "error");
+  
   loadUserName();
   loadVitals();
   startPolling();
