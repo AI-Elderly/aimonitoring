@@ -14,9 +14,9 @@
       display: inline-block;
       margin-top: 10px;
     }
-    .status-normal { color: #27ae60; }        /* Green for connected */
-    .status-disconnected { color: #e74c3c; } /* Red for disconnected */
-    .status-warning { color: #f1c40f; }      /* Yellow for connecting/warning */
+    .status-normal { color: #27ae60; }
+    .status-disconnected { color: #e74c3c; }
+    .status-warning { color: #f1c40f; }
     .loading-spinner {
       border: 4px solid #f3f3f3;
       border-top: 4px solid #3498db;
@@ -50,6 +50,36 @@
     .device-info ul { list-style: none; padding: 0; text-align: left; }
     .device-info li { margin: 5px 0; }
     .error-message { color: #e74c3c; font-weight: 500; margin-top: 10px; }
+    .auto-connect-toggle {
+      margin-top: 15px;
+      padding: 10px;
+      background: #ecf0f1;
+      border-radius: 8px;
+    }
+    .auto-connect-toggle label {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .auto-connect-toggle input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+    }
+    .info-box {
+      margin-top: 15px;
+      padding: 15px;
+      background: #e8f4f8;
+      border-left: 4px solid #3498db;
+      border-radius: 4px;
+      text-align: left;
+      font-size: 13px;
+    }
+    .info-box strong {
+      color: #2980b9;
+    }
   </style>
 </head>
 <body>
@@ -90,6 +120,23 @@
           <p id="error-message" class="error-message"></p>
 
           <button class="get-started-btn" id="connect-btn">🔗 Connect Device</button>
+
+          <!-- Auto-Connect Toggle -->
+          <div class="auto-connect-toggle">
+            <label>
+              <input type="checkbox" id="auto-connect-checkbox" />
+              <span><strong>Enable Background Sync</strong><br>
+              <small>Keep syncing data even when you close this page</small></span>
+            </label>
+          </div>
+
+          <div class="info-box">
+            <strong>💡 How it works:</strong><br>
+            1. Connect your ESP32 device<br>
+            2. Enable "Background Sync"<br>
+            3. Close this page and visit Dashboard<br>
+            4. Data will update automatically in real-time!
+          </div>
         </div>
 
         <!-- Device Readings -->
@@ -111,7 +158,220 @@
     </main>
   </div>
 
-  <script src="device.js"></script>
+  <script>
+    const connectBtn = document.getElementById("connect-btn");
+    const statusText = document.getElementById("device-status");
+    const errorMessage = document.getElementById("error-message");
+    const deviceInfo = document.getElementById("device-info");
+    const loading = document.getElementById("loading");
+    const autoConnectCheckbox = document.getElementById("auto-connect-checkbox");
+
+    const backendURL = "https://semimaterialistic-hyperbolic-laverne.ngrok-free.dev";
+    const esp32Direct = "http://192.168.100.18";
+    const esp32Proxy = `${backendURL}/esp32`;
+    
+    let isConnected = false;
+    let pollInterval = null;
+    let useProxy = false;
+
+    const getUserId = () => localStorage.getItem("user_id");
+    const getToken = () => localStorage.getItem("access_token");
+
+    // Check auto-connect status on load
+    autoConnectCheckbox.checked = localStorage.getItem("esp_auto_connect") === "true";
+
+    // Auto-connect toggle
+    autoConnectCheckbox.addEventListener("change", (e) => {
+      if (e.target.checked) {
+        localStorage.setItem("esp_auto_connect", "true");
+        localStorage.setItem("esp_connected", "true");
+        alert("✅ Background sync enabled! Your dashboard will now update automatically even when this page is closed.");
+      } else {
+        localStorage.removeItem("esp_auto_connect");
+        localStorage.removeItem("esp_connected");
+        alert("❌ Background sync disabled. You'll need to keep this page open for data to sync.");
+      }
+    });
+
+    function updateDeviceInfoUI(data) {
+      const hr = data.heart_rate || 0;
+      const spo2 = data.spo2 || 0;
+      const ir = data.ir || 0;
+      const red = data.red || 0;
+      
+      document.getElementById("hr-value").textContent = hr;
+      document.getElementById("spo2-value").textContent = spo2;
+      document.getElementById("ir-value").textContent = ir;
+      document.getElementById("red-value").textContent = red;
+      deviceInfo.classList.remove("hidden");
+    }
+
+    async function fetchJSON(url, options = {}) {
+      options.headers = {
+          ...(options.headers || {}),
+          "Authorization": `Bearer ${getToken()}`,
+          "ngrok-skip-browser-warning": "true",
+      };
+      try {
+          const res = await fetch(url, options);
+          const text = await res.text();
+          try {
+              return { ok: res.ok, data: JSON.parse(text) };
+          } catch {
+              return { ok: false, error: "Invalid JSON" };
+          }
+      } catch (err) {
+          return { ok: false, error: err.message };
+      }
+    }
+
+    async function sendReadingToBackend(payload) {
+      if (!getToken()) return;
+      
+      const { ok, data } = await fetchJSON(`${backendURL}/sensor-readings`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+      });
+
+      if (ok) {
+          console.log("✅ Stored reading ID:", data.reading_id);
+      }
+    }
+
+    async function pollReadings() {
+      try {
+          const endpoint = useProxy ? `${esp32Proxy}/readings` : `${esp32Direct}/readings`;
+          const res = await fetchJSON(endpoint);
+
+          if (!res.ok) {
+              if (!useProxy) {
+                  useProxy = true;
+                  return await pollReadings();
+              }
+              throw new Error(res.error || "ESP32 unreachable");
+          }
+
+          const data = res.data;
+
+          if (!isConnected) {
+              isConnected = true;
+              statusText.textContent = "🟢 Device Connected";
+              statusText.classList.remove("status-disconnected");
+              statusText.classList.add("status-normal");
+              connectBtn.textContent = "Disconnect Device";
+          }
+
+          updateDeviceInfoUI(data);
+
+          const hr = data.heart_rate || 0;
+          const spo2 = data.spo2 || 0;
+
+          if (hr > 0 || spo2 > 0) {
+              await sendReadingToBackend({
+                  user_id: Number(getUserId()) || 1,
+                  heart_rate: hr,
+                  spo2: spo2,
+                  ir: data.ir || 0,
+                  red: data.red || 0
+              });
+          }
+
+          errorMessage.textContent = "";
+
+      } catch (err) {
+          isConnected = false;
+          statusText.textContent = "🔴 Device Disconnected";
+          statusText.classList.remove("status-normal");
+          statusText.classList.add("status-disconnected");
+          errorMessage.textContent = err.message;
+          deviceInfo.classList.add("hidden");
+          connectBtn.textContent = "Connect Device";
+      }
+    }
+
+    // Auto-connect on page load
+    window.addEventListener("load", () => {
+      if (!getToken() || !getUserId()) {
+          window.location.href = "signin.html";
+          return;
+      }
+
+      const savedStatus = localStorage.getItem("esp_connected");
+      if (savedStatus === "true") {
+          isConnected = true;
+          statusText.textContent = "🟢 Connected";
+          statusText.classList.add("status-normal");
+          connectBtn.textContent = "Disconnect Device";
+          deviceInfo.classList.remove("hidden");
+          pollReadings();
+          pollInterval = setInterval(pollReadings, 3000);
+      }
+    });
+
+    // Connect/Disconnect button
+    connectBtn.addEventListener("click", async () => {
+      if (!getToken() || !getUserId()) {
+          alert("⚠️ You must log in first.");
+          window.location.href = "signin.html";
+          return;
+      }
+
+      if (isConnected) {
+          if (pollInterval) clearInterval(pollInterval);
+          isConnected = false;
+          localStorage.removeItem("esp_connected");
+          localStorage.removeItem("esp_auto_connect");
+          autoConnectCheckbox.checked = false;
+          statusText.textContent = "🔴 Device Disconnected";
+          statusText.classList.remove("status-normal");
+          statusText.classList.add("status-disconnected");
+          deviceInfo.classList.add("hidden");
+          errorMessage.textContent = "";
+          connectBtn.textContent = "Connect Device";
+          return;
+      }
+
+      statusText.textContent = "🕐 Connecting to ESP32...";
+      loading.classList.remove("hidden");
+      errorMessage.textContent = "";
+      connectBtn.disabled = true;
+      connectBtn.textContent = "Connecting...";
+
+      try {
+          const endpoint = `${esp32Direct}/connect`;
+          let res = await fetchJSON(endpoint);
+          
+          if (!res.ok) {
+              useProxy = true;
+              res = await fetchJSON(`${esp32Proxy}/connect`);
+          }
+          
+          if (!res.ok) throw new Error(res.error || "ESP32 unreachable");
+
+          isConnected = true;
+          localStorage.setItem("esp_connected", "true");
+          statusText.textContent = "🟢 Device Connected Successfully!";
+          statusText.classList.remove("status-disconnected");
+          statusText.classList.add("status-normal");
+          connectBtn.textContent = "Disconnect Device";
+          deviceInfo.classList.remove("hidden");
+
+          pollReadings();
+          pollInterval = setInterval(pollReadings, 3000);
+
+      } catch (err) {
+          statusText.textContent = "⚠️ ESP32 unreachable";
+          statusText.classList.remove("status-normal");
+          statusText.classList.add("status-disconnected");
+          errorMessage.textContent = `${err.message}. Make sure ESP32 is on the same network.`;
+          connectBtn.textContent = "Try Again";
+      } finally {
+          loading.classList.add("hidden");
+          connectBtn.disabled = false;
+      }
+    });
+  </script>
   <script src="logout.js"></script>
 </body>
 </html>
