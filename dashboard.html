@@ -22,47 +22,40 @@
 .card .alert-badge.badge-warning { color: #e67e22 !important; }
 .card .alert-badge.badge-critical { color: #e74c3c !important; }
 
-/* DEBUG PANEL */
-.debug-panel {
+/* Real-time indicator */
+.realtime-indicator {
   position: fixed;
-  bottom: 10px;
+  top: 10px;
   right: 10px;
-  background: rgba(0,0,0,0.9);
+  background: rgba(0,0,0,0.8);
   color: #0f0;
-  padding: 15px;
-  border-radius: 8px;
-  font-family: monospace;
+  padding: 8px 15px;
+  border-radius: 20px;
   font-size: 12px;
-  max-width: 400px;
-  max-height: 300px;
-  overflow-y: auto;
+  font-family: monospace;
   z-index: 9999;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
-.debug-panel h4 {
-  margin: 0 0 10px 0;
-  color: #0ff;
-  border-bottom: 1px solid #0ff;
-  padding-bottom: 5px;
+.realtime-indicator .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #0f0;
+  animation: pulse 2s infinite;
 }
-.debug-log {
-  margin: 5px 0;
-  padding: 5px;
-  background: rgba(0,255,0,0.1);
-  border-left: 3px solid #0f0;
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
 }
-.debug-error {
-  color: #f00;
-  background: rgba(255,0,0,0.1);
-  border-left: 3px solid #f00;
+.realtime-indicator.updating .dot {
+  background: #ff0;
+  animation: blink 0.5s infinite;
 }
-.debug-success {
-  color: #0f0;
-}
-.debug-warning {
-  color: #ff0;
-  background: rgba(255,255,0,0.1);
-  border-left: 3px solid #ff0;
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
 }
 </style>
 <script>
@@ -76,10 +69,10 @@
 
 <button class="back-btn" onclick="window.location.href='signin.html'">← Back</button>
 
-<!-- DEBUG PANEL -->
-<div class="debug-panel" id="debug-panel">
-  <h4>🐛 Debug Console</h4>
-  <div id="debug-logs"></div>
+<!-- Real-time Indicator -->
+<div class="realtime-indicator" id="realtime-indicator">
+  <div class="dot"></div>
+  <span id="status-text">Checking...</span>
 </div>
 
 <div class="dashboard-container">
@@ -136,24 +129,12 @@ if (!token) window.location.href = "signin.html";
 
 let pollInterval = null;
 let lastRecordId = null;
+let lastHeartRate = null;
+let lastSpO2 = null;
 let pollCount = 0;
 
-// DEBUG LOGGER
-const debugLogs = document.getElementById("debug-logs");
-function debugLog(message, type = "log") {
-  const time = new Date().toLocaleTimeString();
-  const div = document.createElement("div");
-  div.className = `debug-${type}`;
-  div.textContent = `[${time}] ${message}`;
-  debugLogs.insertBefore(div, debugLogs.firstChild);
-  
-  // Keep only last 20 logs
-  while (debugLogs.children.length > 20) {
-    debugLogs.removeChild(debugLogs.lastChild);
-  }
-  
-  console.log(`[DEBUG ${type.toUpperCase()}]`, message);
-}
+const realtimeIndicator = document.getElementById("realtime-indicator");
+const statusText = document.getElementById("status-text");
 
 // Logout
 document.getElementById("logout-btn").addEventListener("click", e => {
@@ -162,38 +143,47 @@ document.getElementById("logout-btn").addEventListener("click", e => {
   window.location.href = "signin.html";
 });
 
-// Enhanced fetch wrapper
+// Update status indicator
+function updateStatus(status, isUpdating = false) {
+  statusText.textContent = status;
+  if (isUpdating) {
+    realtimeIndicator.classList.add("updating");
+  } else {
+    realtimeIndicator.classList.remove("updating");
+  }
+}
+
+// Fetch with forced cache bypass
 async function fetchJSON(url, options = {}) {
-  debugLog(`Fetching: ${url}`, "log");
-  
   options.headers = { 
     ...(options.headers || {}), 
     "Authorization": `Bearer ${token}`, 
-    "ngrok-skip-browser-warning": "true",
-    "Cache-Control": "no-cache, no-store, must-revalidate",
-    "Pragma": "no-cache",
-    "Expires": "0"
+    "ngrok-skip-browser-warning": "true"
   };
   
+  // Force cache bypass with random parameter
+  const randomParam = Math.random().toString(36).substring(7);
+  const cacheBuster = url.includes('?') ? `&_r=${randomParam}` : `?_r=${randomParam}`;
+  const finalUrl = url + cacheBuster;
+  
   try {
-    // Add timestamp to prevent caching
-    const cacheBuster = `?_t=${Date.now()}`;
-    const finalUrl = url.includes('?') ? `${url}&_t=${Date.now()}` : `${url}${cacheBuster}`;
+    const res = await fetch(finalUrl, {
+      ...options,
+      cache: 'no-store', // Force no caching
+      headers: options.headers
+    });
     
-    const res = await fetch(finalUrl, options);
     const text = await res.text();
     
     try { 
-      const data = JSON.parse(text);
-      debugLog(`✓ Received ${Array.isArray(data) ? data.length : 1} records`, "success");
-      return { ok: res.ok, data }; 
+      return { ok: res.ok, data: JSON.parse(text) }; 
     } catch { 
-      debugLog(`✗ Invalid JSON response`, "error");
-      return { ok: false, error: "Invalid JSON", raw: text }; 
+      console.error("Invalid JSON:", text.substring(0, 100));
+      return { ok: false, error: "Invalid JSON" }; 
     }
   } catch (err) { 
-    debugLog(`✗ Fetch failed: ${err.message}`, "error");
-    return { ok: false, error: "Fetch failed", raw: err }; 
+    console.error("Fetch error:", err);
+    return { ok: false, error: err.message }; 
   }
 }
 
@@ -203,13 +193,12 @@ async function loadUserName() {
   if (!ok) return;
   if (data.fullname) {
     document.getElementById("welcome-text").innerText = `Welcome, ${data.fullname.split(" ")[0]} 👋`;
-    debugLog(`User: ${data.fullname}`, "success");
   }
 }
 
-// Determine alert for individual vital
+// Alert calculation
 function getVitalAlert(vital, type) {
-  if (vital === null || vital === undefined || vital === 0) return { level: 2, label: "Critical (No Signal)" };
+  if (vital === null || vital === undefined || vital === 0) return { level: 2, label: "No Signal" };
   if (type === "hr") {
     if (vital < 60 || vital > 100) return { level: 1, label: "Warning" };
   } else if (type === "spo2") {
@@ -236,51 +225,57 @@ function updateBadges(hr, spo2) {
   spo2Badge.classList.add(spo2Alert.level===0?"badge-normal":spo2Alert.level===1?"badge-warning":"badge-critical");
 }
 
-// Load latest vitals
+// ⭐ CRITICAL: Load vitals with change detection
 async function loadVitals() {
   pollCount++;
-  debugLog(`Poll #${pollCount} - Fetching vitals...`, "log");
+  updateStatus(`Checking... (${pollCount})`, true);
   
   const { ok, data } = await fetchJSON(`${API_URL}/healthlogs`);
   
   if (!ok) {
-    debugLog("Failed to fetch vitals", "error");
+    updateStatus("Error fetching data", false);
+    console.error("Failed to fetch vitals");
     return;
   }
   
   if (!Array.isArray(data) || !data.length) {
-    debugLog("No data received", "warning");
+    updateStatus("No data available", false);
+    console.warn("No data received");
     return;
   }
 
   const latest = data[0];
-  const currentRecordId = latest.id;
-  
-  // Check if this is new data
-  if (lastRecordId === null) {
-    debugLog(`Initial record ID: ${currentRecordId}`, "success");
-  } else if (currentRecordId !== lastRecordId) {
-    debugLog(`🎉 NEW DATA! Old ID: ${lastRecordId} → New ID: ${currentRecordId}`, "success");
+  const currentId = latest.id;
+  const currentHR = latest.heart_rate ?? 0;
+  const currentSpO2 = latest.spo2 ?? 0;
+
+  // ⭐ DETECT CHANGES
+  const hasNewData = lastRecordId !== currentId;
+  const hasDataChanged = lastHeartRate !== currentHR || lastSpO2 !== currentSpO2;
+
+  if (hasNewData) {
+    console.log(`🎉 NEW RECORD! ID changed: ${lastRecordId} → ${currentId}`);
+    updateStatus(`✓ Updated (ID: ${currentId})`, false);
+  } else if (hasDataChanged) {
+    console.log(`📊 DATA CHANGED! HR: ${lastHeartRate}→${currentHR}, SpO2: ${lastSpO2}→${currentSpO2}`);
+    updateStatus(`✓ Values changed`, false);
   } else {
-    debugLog(`Same record ID: ${currentRecordId} (no new data)`, "warning");
+    updateStatus(`✓ Monitoring (${pollCount})`, false);
   }
-  
-  lastRecordId = currentRecordId;
 
-  const hrValue = latest.heart_rate ?? 0;
-  const spo2Value = latest.spo2 ?? 0;
-  
-  debugLog(`HR: ${hrValue} bpm | SpO₂: ${spo2Value}% | Time: ${latest.timestamp}`, "success");
+  // ⭐ ALWAYS UPDATE UI (even if no changes, to handle initial load)
+  lastRecordId = currentId;
+  lastHeartRate = currentHR;
+  lastSpO2 = currentSpO2;
 
-  // Update values
-  document.getElementById("hr-value").innerHTML = `${hrValue} <span>BPM</span>`;
-  document.getElementById("spo2-value").innerHTML = `${spo2Value}<span>%</span>`;
+  // Update display
+  document.getElementById("hr-value").innerHTML = `${currentHR} <span>BPM</span>`;
+  document.getElementById("spo2-value").innerHTML = `${currentSpO2}<span>%</span>`;
 
-  // Update badges
-  updateBadges(hrValue, spo2Value);
-
-  // Update chart
+  updateBadges(currentHR, currentSpO2);
   updateChart(data);
+
+  console.log(`[${new Date().toLocaleTimeString()}] Poll #${pollCount} - ID: ${currentId}, HR: ${currentHR}, SpO2: ${currentSpO2}`);
 }
 
 // Chart setup
@@ -306,59 +301,58 @@ const healthChart = new Chart(ctx, {
   }
 });
 
-// Update chart data
+// Update chart
 function updateChart(records) {
   const last7 = records.slice(0,7).reverse();
-  healthChart.data.labels = last7.map(r => new Date(r.timestamp).toLocaleDateString("en-US",{month:"short",day:"numeric"}));
+  healthChart.data.labels = last7.map(r => {
+    const date = new Date(r.timestamp);
+    return date.toLocaleDateString("en-US",{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"});
+  });
   healthChart.data.datasets[0].data = last7.map(r => r.heart_rate ?? 0);
   healthChart.data.datasets[1].data = last7.map(r => r.spo2 ?? 0);
   healthChart.update();
 }
 
-// Start/Stop polling
+// Polling control
 function startPolling() {
   if (pollInterval) return;
-  debugLog("✅ Started polling (every 2 seconds)", "success");
-  pollInterval = setInterval(loadVitals, 2000);
+  console.log("✅ Started real-time monitoring");
+  pollInterval = setInterval(loadVitals, 2000); // Every 2 seconds
 }
 
 function stopPolling() {
   if (!pollInterval) return;
-  debugLog("⏸️ Stopped polling", "warning");
+  console.log("⏸️ Stopped monitoring");
   clearInterval(pollInterval);
   pollInterval = null;
 }
 
-// Visibility change detection
+// Visibility detection
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) {
-    debugLog("Page hidden - stopping poll", "warning");
     stopPolling();
+    updateStatus("Paused (tab hidden)", false);
   } else {
-    debugLog("Page visible - refreshing immediately", "success");
+    updateStatus("Resuming...", true);
     loadVitals();
     startPolling();
   }
 });
 
-// Focus detection
 window.addEventListener("focus", () => {
-  debugLog("Window focused - refreshing", "success");
+  updateStatus("Refreshing...", true);
   loadVitals();
   startPolling();
 });
 
 window.addEventListener("blur", () => {
-  debugLog("Window blurred - stopping poll", "warning");
   stopPolling();
 });
 
 // Initial load
 document.addEventListener("DOMContentLoaded", () => {
-  debugLog("🚀 Dashboard loaded", "success");
-  debugLog(`API: ${API_URL}`, "log");
-  debugLog(`Token: ${token ? 'Present' : 'Missing'}`, token ? "success" : "error");
-  
+  console.log("🚀 Real-time Dashboard loaded");
+  console.log(`API: ${API_URL}`);
   loadUserName();
   loadVitals();
   startPolling();

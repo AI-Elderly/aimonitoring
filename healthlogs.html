@@ -38,11 +38,51 @@
       vertical-align: middle;
       margin-right: 5px;
     }
+    /* Real-time indicator */
+    .realtime-indicator {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: rgba(0,0,0,0.8);
+      color: #0f0;
+      padding: 8px 15px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-family: monospace;
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .realtime-indicator .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #0f0;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+    .new-row {
+      animation: highlight 2s;
+    }
+    @keyframes highlight {
+      0% { background-color: #ffffcc; }
+      100% { background-color: transparent; }
+    }
   </style>
 </head>
 <body>
 
   <button class="back-btn" onclick="window.location.href='dashboard.html'">← Back</button>
+
+  <!-- Real-time Indicator -->
+  <div class="realtime-indicator" id="realtime-indicator">
+    <div class="dot"></div>
+    <span id="status-text">Checking...</span>
+  </div>
 
   <div class="dashboard-container">
     <aside class="sidebar">
@@ -78,12 +118,13 @@
 
       <section class="logs-section">
         <h2>📋 Recent Health Records</h2>
-        <button id="refresh-btn">🔄 Refresh</button>
+        <button id="refresh-btn">🔄 Refresh Now</button>
 
         <div class="table-wrapper">
           <table class="logs-table">
             <thead>
               <tr>
+                <th>ID</th>
                 <th>Date</th>
                 <th>Time</th>
                 <th>❤️ Heart Rate</th>
@@ -91,7 +132,7 @@
               </tr>
             </thead>
             <tbody id="health-log-body">
-              <tr><td colspan="4" style="text-align:center; padding:15px;">Loading...</td></tr>
+              <tr><td colspan="5" style="text-align:center; padding:15px;">Loading...</td></tr>
             </tbody>
           </table>
         </div>
@@ -106,8 +147,19 @@ const tableBody = document.getElementById("health-log-body");
 const refreshBtn = document.getElementById("refresh-btn");
 
 let pollInterval = null;
+let lastRecordId = null;
+let pollCount = 0;
+let knownRecordIds = new Set();
 
-// Convert UTC timestamp to Philippine Time (Asia/Manila)
+const realtimeIndicator = document.getElementById("realtime-indicator");
+const statusText = document.getElementById("status-text");
+
+// Update status
+function updateStatus(status) {
+  statusText.textContent = status;
+}
+
+// Format date/time
 function formatDateTime(ts) {
   if (!ts) return { date: "—", time: "—" };
   try {
@@ -132,10 +184,13 @@ function formatDateTime(ts) {
   }
 }
 
-function renderRow(r) {
+// Render table row
+function renderRow(r, isNew = false) {
   const t = formatDateTime(r.timestamp);
+  const rowClass = isNew ? 'class="new-row"' : '';
   return `
-    <tr>
+    <tr ${rowClass} data-id="${r.id}">
+      <td>${r.id}</td>
       <td>${t.date}</td>
       <td>${t.time}</td>
       <td>${r.heart_rate ?? "—"}</td>
@@ -143,6 +198,7 @@ function renderRow(r) {
     </tr>`;
 }
 
+// Update latest vitals display
 function updateLatestVitals(records) {
   if (!records.length) return;
   const r = records[0];
@@ -151,35 +207,39 @@ function updateLatestVitals(records) {
   document.getElementById("live-timestamp").textContent = formatDateTime(r.timestamp).time;
 }
 
-// ⭐ Enhanced fetch with cache busting
+// Fetch with cache bypass
 async function fetchJSON(url, options = {}) {
   options.headers = {
     ...(options.headers || {}),
-    "ngrok-skip-browser-warning": "true",
-    "Cache-Control": "no-cache, no-store, must-revalidate",
-    "Pragma": "no-cache",
-    "Expires": "0"
+    "ngrok-skip-browser-warning": "true"
   };
+  
+  // Force cache bypass
+  const randomParam = Math.random().toString(36).substring(7);
+  const cacheBuster = url.includes('?') ? `&_r=${randomParam}` : `?_r=${randomParam}`;
+  const finalUrl = url + cacheBuster;
+  
   try {
-    // Add timestamp to prevent caching
-    const cacheBuster = `?t=${Date.now()}`;
-    const finalUrl = url.includes('?') ? `${url}&t=${Date.now()}` : `${url}${cacheBuster}`;
-    
-    const res = await fetch(finalUrl, options);
+    const res = await fetch(finalUrl, {
+      ...options,
+      cache: 'no-store',
+      headers: options.headers
+    });
     const text = await res.text();
     return { ok: res.ok, data: JSON.parse(text) };
   } catch (err) {
-    console.error("⌛ NGROK returned HTML or invalid JSON:", err);
-    return { ok: false, error: "Invalid JSON from server" };
+    console.error("Fetch error:", err);
+    return { ok: false, error: err.message };
   }
 }
 
-// ⭐ Load health logs with timestamp logging
+// ⭐ Load health logs with change detection
 async function loadHealthLogs() {
-  console.log(`[${new Date().toLocaleTimeString()}] Fetching health logs...`);
+  pollCount++;
+  updateStatus(`Checking... (${pollCount})`);
   
   if (!token) {
-    tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:red;">⚠️ You must log in first.</td></tr>`;
+    tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;">⚠️ You must log in first.</td></tr>`;
     return;
   }
 
@@ -189,48 +249,76 @@ async function loadHealthLogs() {
   });
 
   if (!ok) {
-    tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:red;">⌛ Error loading logs<br><small>${error}</small></td></tr>`;
+    tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;">⌛ Error loading logs<br><small>${error}</small></td></tr>`;
+    updateStatus("Error");
     return;
   }
 
   if (!Array.isArray(data) || data.length === 0) {
-    tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center;">🔭 No records found.</td></tr>`;
+    tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center;">🔭 No records found.</td></tr>`;
+    updateStatus("No data");
     return;
   }
 
-  console.log(`✅ Loaded ${data.length} records`);
-  tableBody.innerHTML = data.map(renderRow).join("");
+  const latestId = data[0].id;
+  
+  // ⭐ DETECT NEW RECORDS
+  if (lastRecordId !== null && latestId !== lastRecordId) {
+    console.log(`🎉 NEW RECORD DETECTED! Old ID: ${lastRecordId} → New ID: ${latestId}`);
+    updateStatus(`✓ New data (ID: ${latestId})`);
+    
+    // Find new records
+    const newRecords = data.filter(r => !knownRecordIds.has(r.id));
+    if (newRecords.length > 0) {
+      console.log(`Found ${newRecords.length} new records`);
+    }
+  } else {
+    updateStatus(`✓ Monitoring (${pollCount})`);
+  }
+
+  lastRecordId = latestId;
+  
+  // Update known IDs
+  knownRecordIds.clear();
+  data.forEach(r => knownRecordIds.add(r.id));
+
+  // Render table with highlighting for new records
+  const isFirstLoad = pollCount === 1;
+  tableBody.innerHTML = data.map(r => renderRow(r, !isFirstLoad && !knownRecordIds.has(r.id))).join("");
+  
   updateLatestVitals(data);
+
+  console.log(`[${new Date().toLocaleTimeString()}] Poll #${pollCount} - Latest ID: ${latestId}, Total: ${data.length}`);
 }
 
-// ⭐ Start/Stop polling
+// Polling control
 function startPolling() {
   if (pollInterval) return;
-  console.log("✅ Started polling health logs");
-  pollInterval = setInterval(loadHealthLogs, 2000); // Poll every 2 seconds
+  console.log("✅ Started real-time monitoring");
+  pollInterval = setInterval(loadHealthLogs, 2000);
 }
 
 function stopPolling() {
   if (!pollInterval) return;
-  console.log("⏸️ Stopped polling");
+  console.log("⏸️ Stopped monitoring");
   clearInterval(pollInterval);
   pollInterval = null;
 }
 
-// ⭐ Visibility change detection
+// Visibility detection
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) {
     stopPolling();
+    updateStatus("Paused");
   } else {
-    console.log("📱 Health logs page visible - refreshing");
+    updateStatus("Resuming...");
     loadHealthLogs();
     startPolling();
   }
 });
 
-// ⭐ Focus detection
 window.addEventListener("focus", () => {
-  console.log("🔍 Window focused - refreshing logs");
+  updateStatus("Refreshing...");
   loadHealthLogs();
   startPolling();
 });
@@ -239,13 +327,14 @@ window.addEventListener("blur", () => {
   stopPolling();
 });
 
-// ⭐ Manual refresh button
+// Manual refresh
 refreshBtn.addEventListener("click", () => {
-  console.log("🔄 Manual refresh triggered");
+  console.log("🔄 Manual refresh");
+  updateStatus("Refreshing...");
   loadHealthLogs();
 });
 
-// ⭐ Initial load
+// Initial load
 console.log("🚀 Health logs page loaded");
 loadHealthLogs();
 startPolling();
