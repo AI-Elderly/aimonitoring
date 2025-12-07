@@ -1,34 +1,33 @@
-// device.js - FULL DEBUG VERSION
+// device.js
 
 if (!document.getElementById("connect-btn")) {
-    console.warn("⚠️ device.js loaded on non-device page. Script skipped.");
+    console.warn("device.js loaded on non-device page. Script skipped.");
 } else {
 
-  console.log("🚀 Device.js initialized");
-
+  // ----------------------------------------------------
+  // DOM ELEMENTS
+  // ----------------------------------------------------
   const connectBtn = document.getElementById("connect-btn");
   const statusText = document.getElementById("device-status");
   const errorMessage = document.getElementById("error-message");
   const deviceInfo = document.getElementById("device-info");
   const loading = document.getElementById("loading");
 
+  // ----------------------------------------------------
+  // SETTINGS
+  // ----------------------------------------------------
   const backendURL = "https://semimaterialistic-hyperbolic-laverne.ngrok-free.dev";
-  const esp32Direct = "http://192.168.100.18";
-  const esp32Proxy = `${backendURL}/esp32`;
-  
+  const esp32Proxy = `${backendURL}/esp32`; // Proxy endpoint on backend
   let isConnected = false;
   let pollInterval = null;
-  let useProxy = false;
-  let pollCount = 0;
 
+  // ----------------------------------------------------
+  // HELPERS
+  // ----------------------------------------------------
   const getUserId = () => localStorage.getItem("user_id");
   const getToken = () => localStorage.getItem("access_token");
 
-  console.log("User ID:", getUserId());
-  console.log("Token exists:", !!getToken());
-
   function updateDeviceInfoUI(data) {
-      console.log("📊 Updating UI with data:", data);
       document.getElementById("hr-value").textContent = data.heart_rate ?? "--";
       document.getElementById("spo2-value").textContent = data.spo2 ?? "--";
       document.getElementById("ir-value").textContent = data.ir ?? "--";
@@ -43,32 +42,23 @@ if (!document.getElementById("connect-btn")) {
           "ngrok-skip-browser-warning": "true",
       };
       try {
-          console.log(`🌐 Fetching: ${url}`);
           const res = await fetch(url, options);
           const text = await res.text();
           try {
-              const data = JSON.parse(text);
-              console.log(`✅ Response OK:`, data);
-              return { ok: res.ok, data };
+              return { ok: res.ok, data: JSON.parse(text) };
           } catch {
-              console.error("❌ Invalid JSON response:", text.substring(0, 200));
               return { ok: false, error: "Invalid JSON from backend", raw: text };
           }
       } catch (err) {
-          console.error("❌ Fetch error:", err.message);
           return { ok: false, error: err.message };
       }
   }
 
-  // ⭐ CRITICAL: Send reading to backend
+  // ----------------------------------------------------
+  // SEND READING TO BACKEND
+  // ----------------------------------------------------
   async function sendReadingToBackend(payload) {
-      if (!getToken()) {
-          console.warn("⚠️ No token - skipping backend send");
-          return;
-      }
-      
-      console.log("📤 SENDING TO BACKEND:", payload);
-      
+      if (!getToken()) return;
       const { ok, data, error } = await fetchJSON(`${backendURL}/sensor-readings`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -76,105 +66,85 @@ if (!document.getElementById("connect-btn")) {
       });
 
       if (!ok) {
-          console.error("❌ Backend storage FAILED:", error);
+          console.warn("Backend error:", error);
       } else {
-          console.log("✅ Backend stored successfully! Reading ID:", data.reading_id);
+          console.log("Backend stored reading:", data);
       }
   }
 
-  // ⭐ Poll ESP32 and send to backend
+  // ----------------------------------------------------
+  // POLL ESP32 AND UPDATE STATUS
+  // ----------------------------------------------------
   async function pollReadings() {
-      pollCount++;
-      console.log(`\n📡 [Poll #${pollCount}] Fetching ESP32 readings...`);
-      
       try {
-          const endpoint = useProxy ? `${esp32Proxy}/readings` : `${esp32Direct}/readings`;
-          console.log(`Using endpoint: ${endpoint}`);
-          
-          const res = await fetchJSON(endpoint);
+          const res = await fetchJSON(`${esp32Proxy}/readings`);
 
-          if (!res.ok) {
-              if (!useProxy) {
-                  console.log("Direct connection failed, switching to proxy...");
-                  useProxy = true;
-                  return await pollReadings();
-              }
-              throw new Error(res.error || "ESP32 unreachable");
-          }
+          if (!res.ok) throw new Error(res.error || "ESP32 unreachable");
 
           const data = res.data;
-          console.log("📊 ESP32 Data received:", data);
 
-          // Device is connected
+          // If we reach here, device is connected
           if (!isConnected) {
               isConnected = true;
               statusText.textContent = "🟢 Device Connected";
               statusText.classList.remove("status-disconnected");
               statusText.classList.add("status-normal");
               connectBtn.textContent = "Disconnect Device";
-              console.log("✅ ESP32 connection established");
           }
 
           updateDeviceInfoUI(data);
 
-          // ⭐ CRITICAL: Send to backend immediately
-          const payload = {
+          // Send readings to backend
+          await sendReadingToBackend({
               user_id: Number(getUserId()) || 1,
               heart_rate: data.heart_rate ?? null,
               spo2: data.spo2 ?? null,
               ir: data.ir ?? null,
               red: data.red ?? null
-          };
-          
-          console.log("Prepared payload for backend:", payload);
-          await sendReadingToBackend(payload);
+          });
 
           errorMessage.textContent = "";
 
       } catch (err) {
-          console.error("❌ ESP32 polling error:", err);
+          // Device disconnected
           isConnected = false;
           statusText.textContent = "🔴 Device Disconnected";
           statusText.classList.remove("status-normal");
           statusText.classList.add("status-disconnected");
           errorMessage.textContent = err.message;
+
+          // Hide device info when disconnected
           deviceInfo.classList.add("hidden");
           connectBtn.textContent = "Connect Device";
       }
   }
 
-  // Initialize on page load
+  // ----------------------------------------------------
+  // INIT CONNECTION ON PAGE LOAD
+  // ----------------------------------------------------
   window.addEventListener("load", () => {
-      console.log("🔄 Page loaded - checking credentials...");
-      
       if (!getToken() || !getUserId()) {
-          console.error("❌ Missing credentials, redirecting to signin");
           window.location.href = "signin.html";
           return;
       }
 
       const savedStatus = localStorage.getItem("esp_connected");
-      console.log("Saved ESP status:", savedStatus);
 
       if (savedStatus === "true") {
-          console.log("♻️ Auto-reconnecting to ESP32...");
           isConnected = true;
           statusText.textContent = "🟢 Connected";
           statusText.classList.add("status-normal");
           connectBtn.textContent = "Disconnect Device";
           deviceInfo.classList.remove("hidden");
-          
           pollReadings();
           pollInterval = setInterval(pollReadings, 3000);
-          console.log("✅ Polling started (every 3 seconds)");
-      } else {
-          console.log("ℹ️ Device not auto-connected. Click 'Connect Device' button.");
       }
   });
 
-  // Connect/Disconnect button
+  // ----------------------------------------------------
+  // CONNECT/DISCONNECT BUTTON
+  // ----------------------------------------------------
   connectBtn.addEventListener("click", async () => {
-      console.log("\n🔘 Connect button clicked");
 
       if (!getToken() || !getUserId()) {
           alert("⚠️ You must log in first.");
@@ -183,7 +153,6 @@ if (!document.getElementById("connect-btn")) {
       }
 
       if (isConnected) {
-          console.log("🔌 Disconnecting...");
           if (pollInterval) clearInterval(pollInterval);
           isConnected = false;
           localStorage.removeItem("esp_connected");
@@ -193,12 +162,10 @@ if (!document.getElementById("connect-btn")) {
           deviceInfo.classList.add("hidden");
           errorMessage.textContent = "";
           connectBtn.textContent = "Connect Device";
-          console.log("✅ Disconnected successfully");
           return;
       }
 
       // Try to connect
-      console.log("🔗 Attempting to connect to ESP32...");
       statusText.textContent = "🕐 Connecting to ESP32...";
       loading.classList.remove("hidden");
       errorMessage.textContent = "";
@@ -206,23 +173,12 @@ if (!document.getElementById("connect-btn")) {
       connectBtn.textContent = "Connecting...";
 
       try {
-          const endpoint = `${esp32Direct}/connect`;
-          console.log(`Trying direct connection: ${endpoint}`);
-          
-          let res = await fetchJSON(endpoint);
-          
-          if (!res.ok) {
-              console.log("Direct failed, trying proxy...");
-              useProxy = true;
-              res = await fetchJSON(`${esp32Proxy}/connect`);
-          }
-          
+          const res = await fetchJSON(`${esp32Proxy}/connect`);
           if (!res.ok) throw new Error(res.error || "ESP32 unreachable");
 
           const data = res.data;
-          console.log("Connection response:", data);
 
-          if (data?.status === "connected" || data) {
+          if (data?.status === "connected") {
               isConnected = true;
               localStorage.setItem("esp_connected", "true");
               statusText.textContent = "🟢 Device Connected Successfully!";
@@ -231,7 +187,6 @@ if (!document.getElementById("connect-btn")) {
               connectBtn.textContent = "Disconnect Device";
               deviceInfo.classList.remove("hidden");
 
-              console.log("✅ Connection successful! Starting polling...");
               pollReadings();
               pollInterval = setInterval(pollReadings, 3000);
               return;
@@ -240,11 +195,10 @@ if (!document.getElementById("connect-btn")) {
           throw new Error("ESP32 did not confirm connection");
 
       } catch (err) {
-          console.error("❌ Connection failed:", err);
           statusText.textContent = "⚠️ ESP32 unreachable";
           statusText.classList.remove("status-normal");
           statusText.classList.add("status-disconnected");
-          errorMessage.textContent = `${err.message}. Make sure ESP32 is on the same network.`;
+          errorMessage.textContent = err.message;
           connectBtn.textContent = "Try Again";
       } finally {
           loading.classList.add("hidden");
@@ -252,6 +206,4 @@ if (!document.getElementById("connect-btn")) {
       }
   });
 
-  console.log("✅ Device.js setup complete - ready to connect");
-
-}
+} // end wrapper
