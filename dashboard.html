@@ -7,7 +7,6 @@
 <link rel="stylesheet" href="styles.css" />
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
 <style>
-/* Badge styling */
 .card .alert-badge {
   display: block !important;
   margin-top: 12px;
@@ -19,8 +18,6 @@
   border: none !important;
   box-shadow: none !important;
 }
-
-/* Badge color classes */
 .card .alert-badge.badge-normal { color: #3498db !important; }
 .card .alert-badge.badge-warning { color: #e67e22 !important; }
 .card .alert-badge.badge-critical { color: #e74c3c !important; }
@@ -37,13 +34,12 @@
 <button class="back-btn" onclick="window.location.href='signin.html'">← Back</button>
 
 <div class="dashboard-container">
-  <!-- Sidebar -->
   <aside class="sidebar">
     <h2 class="logo">BELGIUM<span>sys</span></h2>
     <nav class="nav-links">
       <a href="./dashboard.html" class="active">
-  <img src="dashboard.png" alt="Dashboard Icon" style="width:24px; height:24px; vertical-align:middle; margin-right:6px;"> Dashboard
-</a>
+        <img src="dashboard.png" alt="Dashboard Icon" style="width:24px; height:24px; vertical-align:middle; margin-right:6px;"> Dashboard
+      </a>
       <a href="./healthlogs.html">📋 Health Logs</a>
       <a href="./settings.html">⚙️ Settings</a>
       <a href="./device.html">🔌 Device</a>
@@ -55,14 +51,12 @@
     </nav>
   </aside>
 
-  <!-- Main Content -->
   <main class="main-content">
     <header class="dashboard-header">
       <h1 id="welcome-text">Welcome, User 👋</h1>
       <p>Here's your latest health summary</p>
     </header>
 
-    <!-- Health Cards -->
     <section class="cards">
       <div class="card" id="hr-card">
         <h3>❤️ Heart Rate</h3>
@@ -76,7 +70,6 @@
       </div>
     </section>
 
-    <!-- Chart Section -->
     <section class="chart-section">
       <h2>Health Progression Graph</h2>
       <div class="chart-container">
@@ -92,6 +85,8 @@ const API_URL = "https://semimaterialistic-hyperbolic-laverne.ngrok-free.dev";
 const token = localStorage.getItem("access_token");
 if (!token) window.location.href = "signin.html";
 
+let pollInterval = null;
+
 // Logout
 document.getElementById("logout-btn").addEventListener("click", e => {
   e.preventDefault();
@@ -99,15 +94,29 @@ document.getElementById("logout-btn").addEventListener("click", e => {
   window.location.href = "signin.html";
 });
 
-// Fetch wrapper with token
+// ⭐ Enhanced fetch wrapper with better error handling
 async function fetchJSON(url, options = {}) {
-  options.headers = { ...(options.headers || {}), "Authorization": `Bearer ${token}`, "ngrok-skip-browser-warning": "true" };
+  options.headers = { 
+    ...(options.headers || {}), 
+    "Authorization": `Bearer ${token}`, 
+    "ngrok-skip-browser-warning": "true",
+    "Cache-Control": "no-cache, no-store, must-revalidate",
+    "Pragma": "no-cache",
+    "Expires": "0"
+  };
   try {
     const res = await fetch(url, options);
     const text = await res.text();
-    try { return { ok: res.ok, data: JSON.parse(text) }; } 
-    catch { return { ok: false, error: "Invalid JSON", raw: text }; }
-  } catch (err) { return { ok: false, error: "Fetch failed", raw: err }; }
+    try { 
+      return { ok: res.ok, data: JSON.parse(text) }; 
+    } catch { 
+      console.error("Invalid JSON response:", text);
+      return { ok: false, error: "Invalid JSON", raw: text }; 
+    }
+  } catch (err) { 
+    console.error("Fetch error:", err);
+    return { ok: false, error: "Fetch failed", raw: err }; 
+  }
 }
 
 // Load user name
@@ -148,12 +157,24 @@ function updateBadges(hr, spo2) {
   spo2Badge.classList.add(spo2Alert.level===0?"badge-normal":spo2Alert.level===1?"badge-warning":"badge-critical");
 }
 
-// Load latest vitals
+// ⭐ Load latest vitals with timestamp logging
 async function loadVitals() {
+  console.log(`[${new Date().toLocaleTimeString()}] Fetching vitals...`);
+  
   const { ok, data } = await fetchJSON(`${API_URL}/healthlogs`);
-  if (!ok || !Array.isArray(data) || !data.length) return;
+  
+  if (!ok) {
+    console.error("Failed to fetch vitals");
+    return;
+  }
+  
+  if (!Array.isArray(data) || !data.length) {
+    console.warn("No data received");
+    return;
+  }
 
   const latest = data[0];
+  console.log("Latest reading:", latest);
 
   const hrValue = latest.heart_rate ?? 0;
   const spo2Value = latest.spo2 ?? 0;
@@ -201,11 +222,48 @@ function updateChart(records) {
   healthChart.update();
 }
 
-// Initial load + interval
+// ⭐ Start/Stop polling based on visibility
+function startPolling() {
+  if (pollInterval) return; // Already polling
+  console.log("✅ Started polling");
+  pollInterval = setInterval(loadVitals, 2000); // Poll every 2 seconds
+}
+
+function stopPolling() {
+  if (!pollInterval) return;
+  console.log("⏸️ Stopped polling");
+  clearInterval(pollInterval);
+  pollInterval = null;
+}
+
+// ⭐ Visibility change detection
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) {
+    stopPolling();
+  } else {
+    console.log("📱 Page visible - refreshing immediately");
+    loadVitals(); // Immediate refresh
+    startPolling(); // Resume polling
+  }
+});
+
+// ⭐ Focus detection
+window.addEventListener("focus", () => {
+  console.log("🔍 Window focused - refreshing");
+  loadVitals();
+  startPolling();
+});
+
+window.addEventListener("blur", () => {
+  stopPolling();
+});
+
+// ⭐ Initial load
 document.addEventListener("DOMContentLoaded", () => {
+  console.log("🚀 Dashboard loaded");
   loadUserName();
   loadVitals();
-  setInterval(loadVitals, 2000);
+  startPolling();
 });
 </script>
 <script src="logout.js"></script>

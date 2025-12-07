@@ -105,8 +105,6 @@ const token = localStorage.getItem("access_token");
 const tableBody = document.getElementById("health-log-body");
 const refreshBtn = document.getElementById("refresh-btn");
 
-let pollInterval = null;
-
 // Convert UTC timestamp to Philippine Time (Asia/Manila)
 function formatDateTime(ts) {
   if (!ts) return { date: "—", time: "—" };
@@ -151,33 +149,22 @@ function updateLatestVitals(records) {
   document.getElementById("live-timestamp").textContent = formatDateTime(r.timestamp).time;
 }
 
-// ⭐ Enhanced fetch with cache busting
 async function fetchJSON(url, options = {}) {
   options.headers = {
     ...(options.headers || {}),
-    "ngrok-skip-browser-warning": "true",
-    "Cache-Control": "no-cache, no-store, must-revalidate",
-    "Pragma": "no-cache",
-    "Expires": "0"
+    "ngrok-skip-browser-warning": "true"
   };
   try {
-    // Add timestamp to prevent caching
-    const cacheBuster = `?t=${Date.now()}`;
-    const finalUrl = url.includes('?') ? `${url}&t=${Date.now()}` : `${url}${cacheBuster}`;
-    
-    const res = await fetch(finalUrl, options);
+    const res = await fetch(url, options);
     const text = await res.text();
     return { ok: res.ok, data: JSON.parse(text) };
   } catch (err) {
-    console.error("⌛ NGROK returned HTML or invalid JSON:", err);
+    console.error("❌ NGROK returned HTML or invalid JSON:", err);
     return { ok: false, error: "Invalid JSON from server" };
   }
 }
 
-// ⭐ Load health logs with timestamp logging
 async function loadHealthLogs() {
-  console.log(`[${new Date().toLocaleTimeString()}] Fetching health logs...`);
-  
   if (!token) {
     tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:red;">⚠️ You must log in first.</td></tr>`;
     return;
@@ -189,66 +176,22 @@ async function loadHealthLogs() {
   });
 
   if (!ok) {
-    tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:red;">⌛ Error loading logs<br><small>${error}</small></td></tr>`;
+    tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:red;">❌ Error loading logs<br><small>${error}</small></td></tr>`;
     return;
   }
 
   if (!Array.isArray(data) || data.length === 0) {
-    tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center;">🔭 No records found.</td></tr>`;
+    tableBody.innerHTML = `<tr><td colspan="4" style="text-align:center;">📭 No records found.</td></tr>`;
     return;
   }
 
-  console.log(`✅ Loaded ${data.length} records`);
   tableBody.innerHTML = data.map(renderRow).join("");
   updateLatestVitals(data);
 }
 
-// ⭐ Start/Stop polling
-function startPolling() {
-  if (pollInterval) return;
-  console.log("✅ Started polling health logs");
-  pollInterval = setInterval(loadHealthLogs, 2000); // Poll every 2 seconds
-}
-
-function stopPolling() {
-  if (!pollInterval) return;
-  console.log("⏸️ Stopped polling");
-  clearInterval(pollInterval);
-  pollInterval = null;
-}
-
-// ⭐ Visibility change detection
-document.addEventListener("visibilitychange", () => {
-  if (document.hidden) {
-    stopPolling();
-  } else {
-    console.log("📱 Health logs page visible - refreshing");
-    loadHealthLogs();
-    startPolling();
-  }
-});
-
-// ⭐ Focus detection
-window.addEventListener("focus", () => {
-  console.log("🔍 Window focused - refreshing logs");
-  loadHealthLogs();
-  startPolling();
-});
-
-window.addEventListener("blur", () => {
-  stopPolling();
-});
-
-// ⭐ Manual refresh button
-refreshBtn.addEventListener("click", () => {
-  console.log("🔄 Manual refresh triggered");
-  loadHealthLogs();
-});
-
-// ⭐ Initial load
-console.log("🚀 Health logs page loaded");
+refreshBtn.addEventListener("click", loadHealthLogs);
 loadHealthLogs();
-startPolling();
+setInterval(loadHealthLogs, 2000);
 </script>
 <script src="logout.js"></script>
 </body>
