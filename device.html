@@ -167,12 +167,10 @@
     const autoConnectCheckbox = document.getElementById("auto-connect-checkbox");
 
     const backendURL = "https://semimaterialistic-hyperbolic-laverne.ngrok-free.dev";
-    const esp32Direct = "http://192.168.100.18";
     const esp32Proxy = `${backendURL}/esp32`;
     
     let isConnected = false;
     let pollInterval = null;
-    let useProxy = false;
 
     const getUserId = () => localStorage.getItem("user_id");
     const getToken = () => localStorage.getItem("access_token");
@@ -241,14 +239,11 @@
 
     async function pollReadings() {
       try {
-          const endpoint = useProxy ? `${esp32Proxy}/readings` : `${esp32Direct}/readings`;
+          // Always use proxy on HTTPS
+          const endpoint = `${esp32Proxy}/readings`;
           const res = await fetchJSON(endpoint);
 
           if (!res.ok) {
-              if (!useProxy) {
-                  useProxy = true;
-                  return await pollReadings();
-              }
               throw new Error(res.error || "ESP32 unreachable");
           }
 
@@ -339,13 +334,9 @@
       connectBtn.textContent = "Connecting...";
 
       try {
-          const endpoint = `${esp32Direct}/connect`;
-          let res = await fetchJSON(endpoint);
-          
-          if (!res.ok) {
-              useProxy = true;
-              res = await fetchJSON(`${esp32Proxy}/connect`);
-          }
+          // Always use proxy on HTTPS
+          const endpoint = `${esp32Proxy}/connect`;
+          const res = await fetchJSON(endpoint);
           
           if (!res.ok) throw new Error(res.error || "ESP32 unreachable");
 
@@ -364,7 +355,7 @@
           statusText.textContent = "⚠️ ESP32 unreachable";
           statusText.classList.remove("status-normal");
           statusText.classList.add("status-disconnected");
-          errorMessage.textContent = `${err.message}. Make sure ESP32 is on the same network.`;
+          errorMessage.textContent = `${err.message}. Make sure ESP32 is on and backend proxy is running.`;
           connectBtn.textContent = "Try Again";
       } finally {
           loading.classList.add("hidden");
