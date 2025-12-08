@@ -38,32 +38,66 @@
       vertical-align: middle;
       margin-right: 5px;
     }
-    /* Real-time indicator */
-    .realtime-indicator {
+    /* ESP32 Status Indicator */
+    .esp32-status {
       position: fixed;
       top: 10px;
       right: 10px;
-      background: rgba(0,0,0,0.8);
+      background: rgba(0,0,0,0.85);
       color: #0f0;
-      padding: 8px 15px;
-      border-radius: 20px;
+      padding: 10px 15px;
+      border-radius: 8px;
       font-size: 12px;
       font-family: monospace;
       z-index: 9999;
       display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-width: 200px;
+    }
+    .esp32-status .status-row {
+      display: flex;
       align-items: center;
       gap: 8px;
     }
-    .realtime-indicator .dot {
+    .esp32-status .dot {
       width: 8px;
       height: 8px;
       border-radius: 50%;
       background: #0f0;
       animation: pulse 2s infinite;
     }
+    .esp32-status .dot.disconnected {
+      background: #f00;
+      animation: none;
+    }
+    .esp32-status .dot.connecting {
+      background: #ff0;
+      animation: blink 0.5s infinite;
+    }
     @keyframes pulse {
       0%, 100% { opacity: 1; }
       50% { opacity: 0.3; }
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+    .esp32-toggle {
+      background: #3498db;
+      border: none;
+      color: white;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11px;
+      transition: background 0.3s;
+    }
+    .esp32-toggle:hover {
+      background: #2980b9;
+    }
+    .esp32-toggle.active {
+      background: #27ae60;
     }
     .new-row {
       animation: highlight 2s;
@@ -78,10 +112,16 @@
 
   <button class="back-btn" onclick="window.location.href='dashboard.html'">← Back</button>
 
-  <!-- Real-time Indicator -->
-  <div class="realtime-indicator" id="realtime-indicator">
-    <div class="dot"></div>
-    <span id="status-text">Checking...</span>
+  <!-- ESP32 Status Panel -->
+  <div class="esp32-status" id="esp32-status">
+    <div class="status-row">
+      <div class="dot disconnected" id="esp32-dot"></div>
+      <span id="esp32-text">ESP32: Disconnected</span>
+    </div>
+    <div class="status-row">
+      <span id="data-status">Logs: Checking...</span>
+    </div>
+    <button class="esp32-toggle" id="esp32-toggle" onclick="toggleESP32()">Enable Auto-Connect</button>
   </div>
 
   <div class="dashboard-container">
@@ -140,6 +180,9 @@
     </main>
   </div>
 
+<!-- Background ESP32 Service -->
+<script src="esp32-background-service.js"></script>
+
 <script>
 const FLASK_URL = "https://semimaterialistic-hyperbolic-laverne.ngrok-free.dev";
 const token = localStorage.getItem("access_token");
@@ -151,13 +194,57 @@ let lastRecordId = null;
 let pollCount = 0;
 let knownRecordIds = new Set();
 
-const realtimeIndicator = document.getElementById("realtime-indicator");
-const statusText = document.getElementById("status-text");
+const esp32Dot = document.getElementById("esp32-dot");
+const esp32Text = document.getElementById("esp32-text");
+const dataStatus = document.getElementById("data-status");
+const esp32Toggle = document.getElementById("esp32-toggle");
 
-// Update status
-function updateStatus(status) {
-  statusText.textContent = status;
+// Toggle ESP32 auto-connect
+function toggleESP32() {
+  const status = window.ESP32BackgroundService.status();
+  
+  if (status.autoConnect) {
+    window.ESP32BackgroundService.stop();
+    esp32Toggle.textContent = "Enable Auto-Connect";
+    esp32Toggle.classList.remove("active");
+    esp32Text.textContent = "ESP32: Disabled";
+    esp32Dot.classList.add("disconnected");
+    alert("❌ ESP32 auto-connect disabled. Refresh page or click 'Enable' to reconnect.");
+  } else {
+    window.ESP32BackgroundService.start();
+    esp32Toggle.textContent = "Disable Auto-Connect";
+    esp32Toggle.classList.add("active");
+    esp32Text.textContent = "ESP32: Connecting...";
+    esp32Dot.classList.remove("disconnected");
+    esp32Dot.classList.add("connecting");
+    alert("✅ ESP32 auto-connect enabled! Data will sync automatically in the background.");
+  }
 }
+
+// Update ESP32 status indicator
+setInterval(() => {
+  const status = window.ESP32BackgroundService.status();
+  
+  if (status.connected) {
+    esp32Text.textContent = `ESP32: Connected (${status.pollCount})`;
+    esp32Dot.className = "dot";
+  } else if (status.autoConnect) {
+    esp32Text.textContent = "ESP32: Connecting...";
+    esp32Dot.className = "dot connecting";
+  } else {
+    esp32Text.textContent = "ESP32: Disabled";
+    esp32Dot.className = "dot disconnected";
+  }
+  
+  // Update toggle button
+  if (status.autoConnect) {
+    esp32Toggle.textContent = "Disable Auto-Connect";
+    esp32Toggle.classList.add("active");
+  } else {
+    esp32Toggle.textContent = "Enable Auto-Connect";
+    esp32Toggle.classList.remove("active");
+  }
+}, 1000);
 
 // Format date/time
 function formatDateTime(ts) {
@@ -214,7 +301,6 @@ async function fetchJSON(url, options = {}) {
     "ngrok-skip-browser-warning": "true"
   };
   
-  // Force cache bypass
   const randomParam = Math.random().toString(36).substring(7);
   const cacheBuster = url.includes('?') ? `&_r=${randomParam}` : `?_r=${randomParam}`;
   const finalUrl = url + cacheBuster;
@@ -228,15 +314,14 @@ async function fetchJSON(url, options = {}) {
     const text = await res.text();
     return { ok: res.ok, data: JSON.parse(text) };
   } catch (err) {
-    console.error("Fetch error:", err);
     return { ok: false, error: err.message };
   }
 }
 
-// ⭐ Load health logs with change detection
+// Load health logs
 async function loadHealthLogs() {
   pollCount++;
-  updateStatus(`Checking... (${pollCount})`);
+  dataStatus.textContent = `Logs: Checking... (${pollCount})`;
   
   if (!token) {
     tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;">⚠️ You must log in first.</td></tr>`;
@@ -249,58 +334,51 @@ async function loadHealthLogs() {
   });
 
   if (!ok) {
-    tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;">⌛ Error loading logs<br><small>${error}</small></td></tr>`;
-    updateStatus("Error");
+    tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;">❌ Error loading logs<br><small>${error}</small></td></tr>`;
+    dataStatus.textContent = "Logs: Error";
     return;
   }
 
   if (!Array.isArray(data) || data.length === 0) {
     tableBody.innerHTML = `<tr><td colspan="5" style="text-align:center;">🔭 No records found.</td></tr>`;
-    updateStatus("No data");
+    dataStatus.textContent = "Logs: No data";
     return;
   }
 
   const latestId = data[0].id;
   
-  // ⭐ DETECT NEW RECORDS
   if (lastRecordId !== null && latestId !== lastRecordId) {
-    console.log(`🎉 NEW RECORD DETECTED! Old ID: ${lastRecordId} → New ID: ${latestId}`);
-    updateStatus(`✓ New data (ID: ${latestId})`);
-    
-    // Find new records
-    const newRecords = data.filter(r => !knownRecordIds.has(r.id));
-    if (newRecords.length > 0) {
-      console.log(`Found ${newRecords.length} new records`);
-    }
+    console.log(`🎉 NEW RECORD! ID: ${lastRecordId} → ${latestId}`);
+    dataStatus.textContent = `Logs: ✓ Updated (ID: ${latestId})`;
   } else {
-    updateStatus(`✓ Monitoring (${pollCount})`);
+    dataStatus.textContent = `Logs: ✓ Monitoring (${pollCount})`;
   }
 
   lastRecordId = latestId;
   
   // Update known IDs
+  const oldIds = new Set(knownRecordIds);
   knownRecordIds.clear();
   data.forEach(r => knownRecordIds.add(r.id));
 
   // Render table with highlighting for new records
   const isFirstLoad = pollCount === 1;
-  tableBody.innerHTML = data.map(r => renderRow(r, !isFirstLoad && !knownRecordIds.has(r.id))).join("");
+  tableBody.innerHTML = data.map(r => {
+    const isNewRecord = !isFirstLoad && !oldIds.has(r.id);
+    return renderRow(r, isNewRecord);
+  }).join("");
   
   updateLatestVitals(data);
-
-  console.log(`[${new Date().toLocaleTimeString()}] Poll #${pollCount} - Latest ID: ${latestId}, Total: ${data.length}`);
 }
 
 // Polling control
 function startPolling() {
   if (pollInterval) return;
-  console.log("✅ Started real-time monitoring");
   pollInterval = setInterval(loadHealthLogs, 2000);
 }
 
 function stopPolling() {
   if (!pollInterval) return;
-  console.log("⏸️ Stopped monitoring");
   clearInterval(pollInterval);
   pollInterval = null;
 }
@@ -309,33 +387,19 @@ function stopPolling() {
 document.addEventListener("visibilitychange", () => {
   if (document.hidden) {
     stopPolling();
-    updateStatus("Paused");
   } else {
-    updateStatus("Resuming...");
     loadHealthLogs();
     startPolling();
   }
 });
 
-window.addEventListener("focus", () => {
-  updateStatus("Refreshing...");
-  loadHealthLogs();
-  startPolling();
-});
-
-window.addEventListener("blur", () => {
-  stopPolling();
-});
-
 // Manual refresh
 refreshBtn.addEventListener("click", () => {
-  console.log("🔄 Manual refresh");
-  updateStatus("Refreshing...");
   loadHealthLogs();
 });
 
 // Initial load
-console.log("🚀 Health logs page loaded");
+console.log("🚀 Health logs with Background ESP32 Service loaded");
 loadHealthLogs();
 startPolling();
 </script>
