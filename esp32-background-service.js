@@ -157,7 +157,7 @@
       console.log("🔗 [Background] Attempting ESP32 connection...");
 
       try {
-          const endpoint = `${esp32Direct}/connect`;
+          const endpoint = `${esp32Proxy}/connect`;
           let res = await fetchJSON(endpoint);
           
           if (!res.ok) {
