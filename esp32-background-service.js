@@ -7,12 +7,10 @@
   console.log("🤖 ESP32 Background Service initialized");
 
   const backendURL = "https://semimaterialistic-hyperbolic-laverne.ngrok-free.dev";
-  const esp32Direct = "http://192.168.100.18";
   const esp32Proxy = `${backendURL}/esp32`;
   
   let isConnected = false;
   let pollInterval = null;
-  let useProxy = false;
   let pollCount = 0;
   let connectionAttempts = 0;
   const MAX_RETRY = 3;
@@ -72,14 +70,11 @@
       pollCount++;
       
       try {
-          const endpoint = useProxy ? `${esp32Proxy}/readings` : `${esp32Direct}/readings`;
+          // ✅ ALWAYS use proxy endpoint
+          const endpoint = `${esp32Proxy}/readings`;
           const res = await fetchJSON(endpoint);
 
           if (!res.ok) {
-              if (!useProxy) {
-                  useProxy = true;
-                  return await pollReadings();
-              }
               throw new Error(res.error || "ESP32 unreachable");
           }
 
@@ -154,16 +149,12 @@
           return;
       }
 
-      console.log("🔗 [Background] Attempting ESP32 connection...");
+      console.log("🔗 [Background] Attempting ESP32 connection via proxy...");
 
       try {
+          // ✅ ALWAYS use proxy endpoint
           const endpoint = `${esp32Proxy}/connect`;
-          let res = await fetchJSON(endpoint);
-          
-          if (!res.ok) {
-              useProxy = true;
-              res = await fetchJSON(`${esp32Proxy}/connect`);
-          }
+          const res = await fetchJSON(endpoint);
           
           if (!res.ok) throw new Error("ESP32 unreachable");
 
